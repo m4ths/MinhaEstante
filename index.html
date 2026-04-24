@@ -103,6 +103,157 @@
   /* ── main ── */
   main { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem; }
 
+  /* ── annual goal ── */
+  .annual-section {
+    margin-bottom: 2rem;
+  }
+  .annual-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .annual-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .year-selector {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .year-selector button {
+    width: 26px; height: 26px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: transparent;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--muted);
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .year-selector button:hover { background: var(--cream); color: var(--ink); }
+  .year-selector span {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ink);
+    min-width: 44px;
+    text-align: center;
+  }
+  .goal-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+  }
+  .goal-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+  .goal-numbers { display: flex; align-items: baseline; gap: 6px; }
+  .goal-count {
+    font-family: 'Playfair Display', serif;
+    font-size: 36px;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .goal-sep { font-size: 20px; color: var(--muted); }
+  .goal-target {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 400;
+    color: var(--muted);
+    line-height: 1;
+  }
+  .goal-label { font-size: 12px; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; margin-top: 4px; }
+  .goal-set {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .goal-set input {
+    width: 64px;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    text-align: center;
+    background: var(--paper);
+    color: var(--ink);
+  }
+  .goal-set input:focus { outline: none; border-color: var(--accent); }
+  .goal-set button {
+    padding: 6px 12px;
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--accent);
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .goal-set button:hover { background: var(--accent); color: #fff; }
+  .goal-bar-wrap { margin-bottom: 10px; }
+  .goal-bar-track {
+    height: 10px;
+    background: var(--cream);
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+  .goal-bar-fill {
+    height: 100%;
+    border-radius: 5px;
+    transition: width 0.5s ease;
+  }
+  .goal-bar-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .goal-msg {
+    font-size: 13px;
+    font-style: italic;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+  .goal-msg.achieved { color: var(--green); font-style: normal; font-weight: 500; }
+
+  /* ── year history ── */
+  .year-history {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px;
+    margin-top: 1rem;
+  }
+  .year-chip {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .year-chip:hover { border-color: var(--accent); }
+  .year-chip.active-year { border-color: var(--accent); background: var(--accent-light); }
+  .year-chip-num { font-size: 13px; font-weight: 500; color: var(--ink); }
+  .year-chip-count { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
   /* ── stats ── */
   .stats {
     display: grid;
@@ -209,14 +360,48 @@
   /* ── progress ── */
   .progress-wrap { margin-top: 8px; }
   .progress-track {
-    height: 4px;
+    height: 6px;
     background: var(--cream);
-    border-radius: 2px;
+    border-radius: 3px;
     overflow: hidden;
-    margin-bottom: 5px;
+    margin-bottom: 6px;
   }
-  .progress-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
-  .progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+  .progress-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+
+  .quick-progress {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 12px;
+    margin-top: 8px;
+  }
+  .quick-progress label { font-size: 11px; color: var(--muted); white-space: nowrap; letter-spacing: 0.04em; text-transform: uppercase; flex-shrink: 0; }
+  .quick-progress input[type=range] { flex: 1; accent-color: var(--accent); height: 4px; cursor: pointer; }
+  .quick-progress .pct-badge {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink);
+    min-width: 36px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .quick-progress .btn-save-pct {
+    padding: 4px 10px;
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--accent);
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .quick-progress .btn-save-pct:hover { background: var(--accent); color: #fff; }
 
   /* ── empty ── */
   .empty {
@@ -359,13 +544,51 @@
 </div>
 
 <main>
+  <div class="annual-section">
+    <div class="annual-header">
+      <span class="annual-title">Meta anual de leitura</span>
+      <div class="year-selector">
+        <button onclick="changeYear(-1)">&#8249;</button>
+        <span id="selected-year"></span>
+        <button onclick="changeYear(1)">&#8250;</button>
+      </div>
+    </div>
+    <div class="goal-card">
+      <div class="goal-top">
+        <div>
+          <div class="goal-numbers">
+            <span class="goal-count" id="goal-count">0</span>
+            <span class="goal-sep">/</span>
+            <span class="goal-target" id="goal-target">—</span>
+          </div>
+          <div class="goal-label">livros concluídos</div>
+        </div>
+        <div class="goal-set">
+          <input type="number" id="goal-input" min="1" max="999" placeholder="Meta" />
+          <button onclick="saveGoal()">Definir meta</button>
+        </div>
+      </div>
+      <div class="goal-bar-wrap" id="goal-bar-wrap">
+        <div class="goal-bar-track">
+          <div class="goal-bar-fill" id="goal-bar-fill" style="width:0%"></div>
+        </div>
+        <div class="goal-bar-labels">
+          <span id="goal-bar-pct">0%</span>
+          <span id="goal-bar-remaining"></span>
+        </div>
+      </div>
+      <div class="goal-msg" id="goal-msg"></div>
+    </div>
+    <div class="year-history" id="year-history"></div>
+  </div>
+
   <div class="stats" id="stats"></div>
 
   <div class="tabs">
-    <button class="tab-btn active" onclick="setTab('todos', this)">Todos</button>
-    <button class="tab-btn" onclick="setTab('Lendo', this)">Lendo</button>
+    <button class="tab-btn active" onclick="setTab('Lendo', this)">Lendo</button>
     <button class="tab-btn" onclick="setTab('Concluído', this)">Concluídos</button>
     <button class="tab-btn" onclick="setTab('Pausado', this)">Pausados</button>
+    <button class="tab-btn" onclick="setTab('todos', this)">Todos</button>
   </div>
 
   <div class="books" id="books-list"></div>
@@ -424,12 +647,125 @@
 
 <script>
   const API_KEY = 'ebook_api_url';
+  const GOALS_KEY = 'ebook_goals';
   let apiUrl = localStorage.getItem(API_KEY) || '';
   let books = [];
   let editingId = null;
-  let currentTab = 'todos';
+  let currentTab = 'Lendo';
+  let selectedYear = new Date().getFullYear();
+  let goals = JSON.parse(localStorage.getItem(GOALS_KEY) || '{}');
+
+  function changeYear(delta) {
+    selectedYear += delta;
+    document.getElementById('selected-year').textContent = selectedYear;
+    const goalInput = document.getElementById('goal-input');
+    goalInput.value = goals[selectedYear] || '';
+    renderGoal();
+    renderYearHistory();
+  }
+
+  function saveGoal() {
+    const val = parseInt(document.getElementById('goal-input').value);
+    if (!val || val < 1) return toast('Digite uma meta válida.', true);
+    goals[selectedYear] = val;
+    localStorage.setItem(GOALS_KEY, JSON.stringify(goals));
+    renderGoal();
+    renderYearHistory();
+    toast('Meta de ' + selectedYear + ' definida: ' + val + ' livros!');
+  }
+
+  function getYearFromDate(d) {
+    if (!d) return null;
+    if (d.includes('/')) return parseInt(d.split('/')[2]);
+    if (d.includes('-')) return parseInt(d.split('-')[0]);
+    return null;
+  }
+
+  function renderGoal() {
+    const year = selectedYear;
+    const concluded = books.filter(b => {
+      if (b.status !== 'Concluído') return false;
+      const yr = getYearFromDate(b.fim) || getYearFromDate(b.inicio);
+      return yr === year;
+    }).length;
+
+    const goal = goals[year] || 0;
+    document.getElementById('goal-count').textContent = concluded;
+    document.getElementById('goal-target').textContent = goal || '—';
+    document.getElementById('goal-input').value = goal || '';
+
+    const wrap = document.getElementById('goal-bar-wrap');
+    const fill = document.getElementById('goal-bar-fill');
+    const pctEl = document.getElementById('goal-bar-pct');
+    const remEl = document.getElementById('goal-bar-remaining');
+    const msgEl = document.getElementById('goal-msg');
+
+    if (!goal) {
+      wrap.style.display = 'none';
+      msgEl.textContent = 'Defina uma meta para ' + year + ' usando o campo acima.';
+      msgEl.className = 'goal-msg';
+      return;
+    }
+
+    wrap.style.display = 'block';
+    const pct = Math.min(100, Math.round((concluded / goal) * 100));
+    const remaining = Math.max(0, goal - concluded);
+    const barColor = pct >= 100 ? '#3a6b4a' : pct >= 60 ? '#2a6098' : '#b07a20';
+
+    fill.style.width = pct + '%';
+    fill.style.background = barColor;
+    pctEl.textContent = pct + '%';
+    remEl.textContent = remaining > 0 ? 'faltam ' + remaining + ' livro' + (remaining > 1 ? 's' : '') : '✓ meta batida!';
+
+    if (pct >= 100) {
+      msgEl.textContent = '🎉 Parabéns! Você bateu sua meta de ' + goal + ' livros em ' + year + '!';
+      msgEl.className = 'goal-msg achieved';
+    } else if (pct >= 75) {
+      msgEl.textContent = 'Quase lá! Só faltam ' + remaining + ' livro' + (remaining > 1 ? 's' : '') + ' para bater a meta.';
+      msgEl.className = 'goal-msg';
+    } else if (concluded > 0) {
+      msgEl.textContent = 'Continue assim — você já leu ' + concluded + ' de ' + goal + ' livros.';
+      msgEl.className = 'goal-msg';
+    } else {
+      msgEl.textContent = 'Nenhum livro concluído em ' + year + ' ainda. Bora começar!';
+      msgEl.className = 'goal-msg';
+    }
+  }
+
+  function renderYearHistory() {
+    const yearsWithBooks = {};
+    books.forEach(b => {
+      if (b.status !== 'Concluído') return;
+      const yr = getYearFromDate(b.fim) || getYearFromDate(b.inicio);
+      if (yr) yearsWithBooks[yr] = (yearsWithBooks[yr] || 0) + 1;
+    });
+    Object.keys(goals).forEach(y => { if (!yearsWithBooks[y]) yearsWithBooks[y] = 0; });
+
+    const years = Object.keys(yearsWithBooks).map(Number).sort((a,b) => b - a);
+    const container = document.getElementById('year-history');
+    if (!years.length) { container.innerHTML = ''; return; }
+    container.innerHTML = years.map(yr => {
+      const count = yearsWithBooks[yr] || 0;
+      const g = goals[yr];
+      const isActive = yr === selectedYear;
+      const label = g ? count + '/' + g : count + ' lido' + (count !== 1 ? 's' : '');
+      return `<div class="year-chip ${isActive ? 'active-year' : ''}" onclick="jumpToYear(${yr})">
+        <div class="year-chip-num">${yr}</div>
+        <div class="year-chip-count">${label}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function jumpToYear(yr) {
+    selectedYear = yr;
+    document.getElementById('selected-year').textContent = yr;
+    document.getElementById('goal-input').value = goals[yr] || '';
+    renderGoal();
+    renderYearHistory();
+  }
 
   // init
+  document.getElementById('selected-year').textContent = selectedYear;
   if (apiUrl) {
     document.getElementById('api-url-input').value = apiUrl;
     document.getElementById('setup-banner').style.display = 'none';
@@ -474,6 +810,8 @@
   function render() {
     renderStats();
     renderBooks();
+    renderGoal();
+    renderYearHistory();
   }
 
   function renderStats() {
@@ -519,6 +857,12 @@
           <div class="progress-wrap">
             <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${barColor}"></div></div>
             <div class="progress-label"><span>${pct}% lido</span><span>${pct === 100 ? '✓ Concluído' : ''}</span></div>
+            <div class="quick-progress">
+              <label>Progresso</label>
+              <input type="range" min="0" max="100" step="1" value="${pct}" id="slider-${b.id}" oninput="document.getElementById('pct-${b.id}').textContent=this.value+'%'" />
+              <span class="pct-badge" id="pct-${b.id}">${pct}%</span>
+              <button class="btn-save-pct" onclick="saveProgress(${b.id}, '${esc(b.titulo)}')">Salvar</button>
+            </div>
           </div>
         </div>`;
     }).join('');
@@ -620,6 +964,22 @@
     } finally {
       btn.disabled = false;
       btn.textContent = 'Salvar';
+    }
+  }
+
+  async function saveProgress(id, titulo) {
+    const slider = document.getElementById('slider-' + id);
+    if (!slider) return;
+    const newPct = slider.value;
+    const book = books.find(b => b.id === id);
+    if (!book) return;
+    try {
+      await api({ action: 'update', id, ...book, progresso: newPct });
+      book.progresso = newPct;
+      render();
+      toast('Progresso de "' + titulo + '" atualizado para ' + newPct + '%!');
+    } catch (e) {
+      toast('Erro ao salvar progresso: ' + e.message, true);
     }
   }
 
