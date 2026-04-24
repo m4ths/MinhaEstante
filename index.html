@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Minha Estante</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #1a1a18;
+    --paper: #f7f4ee;
+    --cream: #efe9dc;
+    --accent: #b85c2c;
+    --accent-light: #f0ddd3;
+    --muted: #7a7670;
+    --green: #3a6b4a;
+    --green-light: #d6ead9;
+    --amber: #b07a20;
+    --amber-light: #f5e8c8;
+    --border: #d9d3c7;
+    --card: #ffffff;
+    --radius: 4px;
+    --shadow: 0 1px 3px rgba(26,26,24,0.08), 0 4px 16px rgba(26,26,24,0.04);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    font-size: 15px;
+  }
+
+  /* ── top bar ── */
+  header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    letter-spacing: 0.02em;
+  }
+  .logo span { color: var(--accent); font-style: italic; }
+  header .btn-add {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 7px 18px;
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  header .btn-add:hover { opacity: 0.85; }
+
+  /* ── setup banner ── */
+  #setup-banner {
+    background: var(--accent-light);
+    border-bottom: 1px solid #dfc5b8;
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  #setup-banner p { font-size: 13px; color: var(--ink); flex-shrink: 0; }
+  #setup-banner input {
+    flex: 1;
+    min-width: 220px;
+    padding: 7px 10px;
+    border: 1px solid #dfc5b8;
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    background: #fff;
+  }
+  #setup-banner .btn-sm {
+    padding: 7px 14px;
+    border-radius: var(--radius);
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  #setup-banner .btn-sm:hover { background: var(--accent); color: #fff; }
+
+  /* ── main ── */
+  main { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  /* ── stats ── */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px;
+    margin-bottom: 2rem;
+  }
+  .stat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    text-align: center;
+  }
+  .stat-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; letter-spacing: 0.04em; text-transform: uppercase; }
+
+  /* ── tabs ── */
+  .tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .tab-btn {
+    padding: 8px 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.15s;
+  }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
+  .tab-btn:hover:not(.active) { color: var(--ink); }
+
+  /* ── book list ── */
+  .books { display: flex; flex-direction: column; gap: 10px; }
+
+  .book-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.25rem;
+    transition: box-shadow 0.15s, border-color 0.15s;
+    position: relative;
+  }
+  .book-card:hover { box-shadow: var(--shadow); border-color: #c8c0b4; }
+
+  .book-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+  .book-info { flex: 1; min-width: 0; }
+
+  .book-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--ink);
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .book-meta { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 20px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .badge-lendo { background: #dff0e8; color: #2a5c3a; }
+  .badge-concluido { background: #d4e8f5; color: #1a4c6e; }
+  .badge-pausado { background: var(--amber-light); color: #7a5010; }
+
+  .book-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .btn-icon {
+    width: 30px; height: 30px;
+    border: 1px solid var(--border);
+    background: transparent;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--muted);
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .btn-icon:hover { background: var(--cream); color: var(--ink); }
+  .btn-icon.del:hover { background: #fbe8e8; color: #a32d2d; border-color: #f0c0c0; }
+
+  /* ── progress ── */
+  .progress-wrap { margin-top: 8px; }
+  .progress-track {
+    height: 4px;
+    background: var(--cream);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 5px;
+  }
+  .progress-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+
+  /* ── empty ── */
+  .empty {
+    text-align: center;
+    padding: 4rem 1rem;
+    color: var(--muted);
+  }
+  .empty-icon { font-size: 40px; margin-bottom: 1rem; opacity: 0.4; }
+  .empty p { font-size: 14px; }
+
+  /* ── toast ── */
+  #toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--ink);
+    color: var(--paper);
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    opacity: 0;
+    transition: all 0.25s;
+    z-index: 999;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast.err { background: #a32d2d; }
+
+  /* ── modal ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(26,26,24,0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    padding: 1rem;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--card);
+    border-radius: 6px;
+    padding: 1.75rem;
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+  }
+  .modal h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 500;
+    margin-bottom: 1.25rem;
+    color: var(--ink);
+  }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-grid .full { grid-column: 1 / -1; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 12px; font-weight: 500; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; }
+  .field input, .field select {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    background: #fff;
+    color: var(--ink);
+    transition: border-color 0.15s;
+  }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--accent); }
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
+  }
+  .btn-cancel {
+    padding: 8px 18px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    color: var(--muted);
+  }
+  .btn-cancel:hover { background: var(--cream); color: var(--ink); }
+  .btn-save {
+    padding: 8px 20px;
+    border: none;
+    border-radius: var(--radius);
+    background: var(--accent);
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .btn-save:hover { opacity: 0.85; }
+  .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 520px) {
+    header { padding: 0 1rem; }
+    main { padding: 1.5rem 1rem; }
+    .form-grid { grid-template-columns: 1fr; }
+    .form-grid .full { grid-column: 1; }
+    .book-title { white-space: normal; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">minha <span>estante</span></div>
+  <button class="btn-add" onclick="openModal()">+ Adicionar livro</button>
+</header>
+
+<div id="setup-banner">
+  <p>🔗 URL do seu Apps Script:</p>
+  <input type="text" id="api-url-input" placeholder="Cole aqui a URL do Web App (Apps Script)" />
+  <button class="btn-sm" onclick="saveApiUrl()">Salvar</button>
+</div>
+
+<main>
+  <div class="stats" id="stats"></div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="setTab('todos', this)">Todos</button>
+    <button class="tab-btn" onclick="setTab('Lendo', this)">Lendo</button>
+    <button class="tab-btn" onclick="setTab('Concluído', this)">Concluídos</button>
+    <button class="tab-btn" onclick="setTab('Pausado', this)">Pausados</button>
+  </div>
+
+  <div class="books" id="books-list"></div>
+</main>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h2 id="modal-title">Adicionar livro</h2>
+    <div class="form-grid">
+      <div class="field full">
+        <label>Título *</label>
+        <input type="text" id="f-titulo" placeholder="Ex: O Senhor dos Anéis" />
+      </div>
+      <div class="field full">
+        <label>Autor</label>
+        <input type="text" id="f-autor" placeholder="Ex: J.R.R. Tolkien" />
+      </div>
+      <div class="field">
+        <label>Edição</label>
+        <input type="text" id="f-edicao" placeholder="Ex: 2ª edição" />
+      </div>
+      <div class="field">
+        <label>Nº de páginas</label>
+        <input type="number" id="f-paginas" placeholder="Ex: 400" min="1" />
+      </div>
+      <div class="field">
+        <label>Progresso (%)</label>
+        <input type="number" id="f-progresso" placeholder="0" min="0" max="100" />
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="f-status">
+          <option value="Lendo">Lendo</option>
+          <option value="Concluído">Concluído</option>
+          <option value="Pausado">Pausado</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Data de início</label>
+        <input type="date" id="f-inicio" />
+      </div>
+      <div class="field">
+        <label>Data de fim</label>
+        <input type="date" id="f-fim" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" id="btn-save" onclick="saveBook()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  const API_KEY = 'ebook_api_url';
+  let apiUrl = localStorage.getItem(API_KEY) || '';
+  let books = [];
+  let editingId = null;
+  let currentTab = 'todos';
+
+  // init
+  if (apiUrl) {
+    document.getElementById('api-url-input').value = apiUrl;
+    document.getElementById('setup-banner').style.display = 'none';
+    loadBooks();
+  }
+
+  function saveApiUrl() {
+    const val = document.getElementById('api-url-input').value.trim();
+    if (!val) return toast('Cole a URL do Apps Script primeiro.', true);
+    apiUrl = val;
+    localStorage.setItem(API_KEY, val);
+    document.getElementById('setup-banner').style.display = 'none';
+    loadBooks();
+  }
+
+  async function api(params) {
+    if (!apiUrl) return toast('Configure a URL do Apps Script primeiro.', true);
+    const url = apiUrl + '?' + new URLSearchParams(params);
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    return data;
+  }
+
+  async function loadBooks() {
+    try {
+      const data = await api({ action: 'getAll' });
+      books = data.books || [];
+      render();
+    } catch (e) {
+      toast('Erro ao carregar: ' + e.message, true);
+    }
+  }
+
+  function setTab(tab, el) {
+    currentTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    render();
+  }
+
+  function render() {
+    renderStats();
+    renderBooks();
+  }
+
+  function renderStats() {
+    const total = books.length;
+    const lendo = books.filter(b => b.status === 'Lendo').length;
+    const concluidos = books.filter(b => b.status === 'Concluído').length;
+    const pausados = books.filter(b => b.status === 'Pausado').length;
+    document.getElementById('stats').innerHTML = `
+      <div class="stat"><div class="stat-num">${total}</div><div class="stat-label">Total</div></div>
+      <div class="stat"><div class="stat-num">${lendo}</div><div class="stat-label">Lendo</div></div>
+      <div class="stat"><div class="stat-num">${concluidos}</div><div class="stat-label">Concluídos</div></div>
+      <div class="stat"><div class="stat-num">${pausados}</div><div class="stat-label">Pausados</div></div>
+    `;
+  }
+
+  function renderBooks() {
+    const list = document.getElementById('books-list');
+    let filtered = currentTab === 'todos' ? books : books.filter(b => b.status === currentTab);
+    if (!filtered.length) {
+      list.innerHTML = `<div class="empty"><div class="empty-icon">📚</div><p>Nenhum livro aqui ainda.</p></div>`;
+      return;
+    }
+    list.innerHTML = filtered.map(b => {
+      const pct = Math.min(100, Math.max(0, parseInt(b.progresso) || 0));
+      const barColor = pct === 100 ? '#3a6b4a' : pct > 50 ? '#2a6098' : '#b07a20';
+      const badgeClass = b.status === 'Lendo' ? 'badge-lendo' : b.status === 'Concluído' ? 'badge-concluido' : 'badge-pausado';
+      const meta = [b.autor, b.edicao, b.paginas ? b.paginas + ' págs' : ''].filter(Boolean).join(' · ');
+      const inicioFmt = fmtDate(b.inicio);
+      const fimFmt = fmtDate(b.fim);
+      const periodo = [inicioFmt && 'Início: ' + inicioFmt, fimFmt && 'Fim: ' + fimFmt].filter(Boolean).join(' · ');
+      return `
+        <div class="book-card">
+          <div class="book-top">
+            <div class="book-info">
+              <div class="book-title">${esc(b.titulo)}<span class="badge ${badgeClass}">${b.status}</span></div>
+              <div class="book-meta">${[meta, periodo].filter(Boolean).join(' · ')}</div>
+            </div>
+            <div class="book-actions">
+              <button class="btn-icon" onclick='openEdit(${JSON.stringify(b)})' title="Editar">✎</button>
+              <button class="btn-icon del" onclick="deleteBook(${b.id})" title="Remover">✕</button>
+            </div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${barColor}"></div></div>
+            <div class="progress-label"><span>${pct}% lido</span><span>${pct === 100 ? '✓ Concluído' : ''}</span></div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function fmtDate(d) {
+    if (!d) return '';
+    // handles dd/mm/yyyy or yyyy-mm-dd
+    if (d.includes('/')) {
+      const [day, mo, yr] = d.split('/');
+      const months = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+      return `${day} ${months[parseInt(mo)-1]} ${yr}`;
+    }
+    if (d.includes('-')) {
+      const [yr, mo, day] = d.split('-');
+      const months = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+      return `${day} ${months[parseInt(mo)-1]} ${yr}`;
+    }
+    return d;
+  }
+
+  function esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function openModal() {
+    editingId = null;
+    document.getElementById('modal-title').textContent = 'Adicionar livro';
+    ['titulo','autor','edicao','paginas','progresso','inicio','fim'].forEach(f => document.getElementById('f-'+f).value = '');
+    document.getElementById('f-status').value = 'Lendo';
+    document.getElementById('modal-overlay').classList.add('open');
+  }
+
+  function openEdit(book) {
+    editingId = book.id;
+    document.getElementById('modal-title').textContent = 'Editar livro';
+    document.getElementById('f-titulo').value = book.titulo || '';
+    document.getElementById('f-autor').value = book.autor || '';
+    document.getElementById('f-edicao').value = book.edicao || '';
+    document.getElementById('f-paginas').value = book.paginas || '';
+    document.getElementById('f-progresso').value = book.progresso || '';
+    document.getElementById('f-status').value = book.status || 'Lendo';
+    document.getElementById('f-inicio').value = toInputDate(book.inicio);
+    document.getElementById('f-fim').value = toInputDate(book.fim);
+    document.getElementById('modal-overlay').classList.add('open');
+  }
+
+  function toInputDate(d) {
+    if (!d) return '';
+    if (d.includes('-') && d.length === 10) return d;
+    if (d.includes('/')) {
+      const [day, mo, yr] = d.split('/');
+      return `${yr}-${mo.padStart(2,'0')}-${day.padStart(2,'0')}`;
+    }
+    return '';
+  }
+
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+  }
+
+  async function saveBook() {
+    const titulo = document.getElementById('f-titulo').value.trim();
+    if (!titulo) return toast('Título é obrigatório.', true);
+
+    const inicioRaw = document.getElementById('f-inicio').value;
+    const fimRaw = document.getElementById('f-fim').value;
+
+    const book = {
+      titulo,
+      autor: document.getElementById('f-autor').value.trim(),
+      edicao: document.getElementById('f-edicao').value.trim(),
+      paginas: document.getElementById('f-paginas').value.trim(),
+      progresso: document.getElementById('f-progresso').value.trim() || '0',
+      status: document.getElementById('f-status').value,
+      inicio: inicioRaw ? fmtDate(inicioRaw) : '',
+      fim: fimRaw ? fmtDate(fimRaw) : ''
+    };
+
+    const btn = document.getElementById('btn-save');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Salvando...';
+
+    try {
+      if (editingId) {
+        await api({ action: 'update', id: editingId, ...book });
+        const idx = books.findIndex(b => b.id === editingId);
+        if (idx !== -1) books[idx] = { ...book, id: editingId };
+        toast('Livro atualizado!');
+      } else {
+        const res = await api({ action: 'add', ...book });
+        books.push({ ...book, id: res.id });
+        toast('Livro adicionado!');
+      }
+      closeModal();
+      render();
+    } catch (e) {
+      toast('Erro ao salvar: ' + e.message, true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Salvar';
+    }
+  }
+
+  async function deleteBook(id) {
+    if (!confirm('Remover este livro?')) return;
+    try {
+      await api({ action: 'delete', id });
+      books = books.filter(b => b.id !== id);
+      render();
+      toast('Livro removido.');
+    } catch (e) {
+      toast('Erro ao remover: ' + e.message, true);
+    }
+  }
+
+  let toastTimer;
+  function toast(msg, isErr = false) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'show' + (isErr ? ' err' : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.className = '', 3500);
+  }
+
+  // close modal on overlay click
+  document.getElementById('modal-overlay').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+</script>
+</body>
+</html>
