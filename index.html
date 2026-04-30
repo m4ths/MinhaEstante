@@ -139,26 +139,7 @@
     margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);
     display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   }
-  .pages-add-label { font-size: 13px; color: var(--text-dim); flex-shrink: 0; }
-  .pages-add-input {
-    width: 80px; padding: 7px 10px; border: 1px solid var(--border);
-    border-radius: var(--radius); font-family: 'DM Sans', sans-serif;
-    font-size: 14px; background: var(--cream); color: var(--text); text-align: center;
-  }
-  .pages-add-input:focus { outline: none; border-color: var(--accent); }
-  .pages-add-book-select {
-    flex: 1; min-width: 140px; padding: 7px 10px;
-    border: 1px solid var(--border); border-radius: var(--radius);
-    font-family: 'DM Sans', sans-serif; font-size: 13px;
-    background: var(--cream); color: var(--text);
-  }
-  .pages-add-book-select:focus { outline: none; border-color: var(--accent); }
-  .pages-add-btn {
-    padding: 7px 16px; border: 1px solid var(--accent); border-radius: var(--radius);
-    background: transparent; color: var(--accent); font-size: 13px;
-    font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.15s; white-space: nowrap;
-  }
-  .pages-add-btn:hover { background: var(--accent); color: #fff; }
+  .pages-add-label { font-size: 12px; color: var(--text-dim); font-style: italic; }
 
   /* ── Annual Goal ── */
   .annual-section { margin-bottom: 2rem; }
@@ -465,12 +446,7 @@
         <div class="pages-subtitle" id="pages-subtitle">lidas hoje</div>
         <div class="pages-breakdown" id="pages-breakdown"></div>
         <div class="pages-add-section">
-          <span class="pages-add-label">Registrar:</span>
-          <input type="number" class="pages-add-input" id="pages-add-input" min="1" placeholder="Qtd" />
-          <select class="pages-add-book-select" id="pages-add-book">
-            <option value="">— livro —</option>
-          </select>
-          <button class="pages-add-btn" onclick="addPagesRead()">Registrar</button>
+          <span class="pages-add-label">💡 As páginas são calculadas automaticamente ao salvar o progresso de cada livro.</span>
         </div>
       </div>
     </div>
@@ -608,17 +584,16 @@
   /* ── Pages logic ── */
   function savePagesLog() { localStorage.setItem(PAGES_KEY, JSON.stringify(pagesLog)); }
 
-  function addPagesRead() {
-    const qty = parseInt(document.getElementById('pages-add-input').value);
-    const sel = document.getElementById('pages-add-book');
-    const bookId = sel.value;
-    const bookTitle = bookId ? sel.options[sel.selectedIndex].text : '(sem livro)';
-    if (!qty || qty < 1) return toast('Digite a quantidade de páginas.', true);
-    pagesLog.push({ date: todayStr(), pages: qty, bookId: bookId || null, bookTitle });
+  function registerPagesFromProgress(book, oldPct, newPct) {
+    const totalPages = parseInt(book.paginas) || 0;
+    if (!totalPages) return 0; // sem total de páginas cadastrado, não registra
+    const diff = newPct - oldPct;
+    if (diff <= 0) return 0;
+    const pages = Math.round((diff / 100) * totalPages);
+    if (pages <= 0) return 0;
+    pagesLog.push({ date: todayStr(), pages, bookId: book.id, bookTitle: book.titulo });
     savePagesLog();
-    document.getElementById('pages-add-input').value = '';
-    renderPages();
-    toast(`+${qty} páginas registradas!`);
+    return pages;
   }
 
   function getPagesForPeriod(tab) {
@@ -667,13 +642,7 @@
         <div class="pages-breakdown-label">${esc(k.length > 18 ? k.slice(0,16)+'…' : k)}</div>
       </div>`).join('');
 
-    // atualiza select de livros
-    const selEl   = document.getElementById('pages-add-book');
-    const curVal  = selEl.value;
-    selEl.innerHTML = '<option value="">— livro —</option>' +
-      books.filter(b => b.status === 'Lendo' || b.status === 'Pausado').map(b =>
-        `<option value="${b.id}"${b.id == curVal ? ' selected' : ''}>${esc(b.titulo)}</option>`
-      ).join('');
+
   }
 
   /* ── Year / Goal logic ── */
@@ -957,13 +926,19 @@
   async function saveProgress(id, titulo) {
     const slider = document.getElementById('slider-' + id);
     if (!slider) return;
-    const newPct = slider.value;
+    const newPct = parseInt(slider.value);
     const book   = books.find(b => b.id === id);
     if (!book) return;
+    const oldPct = parseInt(book.progresso) || 0;
     try {
       await api({ action: 'update', id, ...book, progresso: newPct });
+      const pagesAdded = registerPagesFromProgress(book, oldPct, newPct);
       book.progresso = newPct; render();
-      toast('Progresso de "' + titulo + '" atualizado para ' + newPct + '%!');
+      if (pagesAdded > 0) {
+        toast(`Progresso salvo! +${pagesAdded} páginas registradas.`);
+      } else {
+        toast('Progresso de "' + titulo + '" atualizado para ' + newPct + '%!');
+      }
     } catch (e) { toast('Erro ao salvar progresso: ' + e.message, true); }
   }
 
