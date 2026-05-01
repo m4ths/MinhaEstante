@@ -4,6 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Minha Estante</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
 <style>
   :root {
@@ -427,6 +430,17 @@
 
 <main>
 
+  <div class="stats" id="stats"></div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="setTab('Lendo', this)">Lendo</button>
+    <button class="tab-btn" onclick="setTab('Concluído', this)">Concluídos</button>
+    <button class="tab-btn" onclick="setTab('Pausado', this)">Pausados</button>
+    <button class="tab-btn" onclick="setTab('todos', this)">Todos</button>
+  </div>
+
+  <div class="books" id="books-list"></div>
+
   <!-- Páginas lidas -->
   <div class="pages-section">
     <span class="section-title">Páginas lidas</span>
@@ -490,17 +504,6 @@
     </div>
     <div class="year-history" id="year-history"></div>
   </div>
-
-  <div class="stats" id="stats"></div>
-
-  <div class="tabs">
-    <button class="tab-btn active" onclick="setTab('Lendo', this)">Lendo</button>
-    <button class="tab-btn" onclick="setTab('Concluído', this)">Concluídos</button>
-    <button class="tab-btn" onclick="setTab('Pausado', this)">Pausados</button>
-    <button class="tab-btn" onclick="setTab('todos', this)">Todos</button>
-  </div>
-
-  <div class="books" id="books-list"></div>
 </main>
 
 <!-- Modal -->
@@ -557,15 +560,12 @@
 <script>
   const API_KEY   = 'ebook_api_url';
   const GOALS_KEY = 'ebook_goals';
-  // pages log agora na planilha
-
   let apiUrl   = localStorage.getItem(API_KEY) || '';
   let books    = [];
   let editingId  = null;
   let currentTab = 'Lendo';
   let selectedYear = new Date().getFullYear();
   let goals    = JSON.parse(localStorage.getItem(GOALS_KEY) || '{}');
-  let pagesLog = []; // não usado — dados na planilha
   let currentPagesTab = 'hoje';
 
   /* ── Date helpers ── */
@@ -582,8 +582,6 @@
   function getYearStart() { return `${new Date().getFullYear()}-01-01`; }
 
   /* ── Pages logic ── */
-  // savePagesLog removido — dados salvos na planilha via API
-
   async function registerPagesFromProgress(book, oldPct, newPct) {
     const totalPages = parseInt(book.paginas) || 0;
     if (!totalPages) return 0;
@@ -601,8 +599,6 @@
     return pages;
   }
 
-  // getPagesForPeriod removido — filtragem feita no servidor
-
   function setPagesTab(tab, el) {
     currentPagesTab = tab;
     document.querySelectorAll('.pages-tab').forEach(t => t.classList.remove('active'));
@@ -610,9 +606,7 @@
     renderPages();
   }
 
-  function renderPages() {
-    const entries = getPagesForPeriod(currentPagesTab);
-    const total   = entries.reduce((s, e) => s + e.pages, 0);
+  async function renderPages() {
     const subtitles = {
       hoje:   'lidas hoje',
       semana: 'lidas esta semana',
@@ -620,24 +614,30 @@
       ano:    `lidas em ${new Date().getFullYear()}`,
       total:  'lidas no total'
     };
-    document.getElementById('pages-number').textContent  = total.toLocaleString('pt-BR');
     document.getElementById('pages-subtitle').textContent = subtitles[currentPagesTab];
+    document.getElementById('pages-number').textContent = '…';
 
-    // breakdown por livro
-    const byBook = {};
-    entries.forEach(e => {
-      const key = e.bookTitle || '(sem livro)';
-      byBook[key] = (byBook[key] || 0) + e.pages;
-    });
-    const bk   = document.getElementById('pages-breakdown');
-    const keys = Object.keys(byBook).sort((a,b) => byBook[b] - byBook[a]);
-    bk.innerHTML = keys.slice(0, 6).map(k => `
-      <div class="pages-breakdown-item">
-        <div class="pages-breakdown-num">${byBook[k].toLocaleString('pt-BR')}</div>
-        <div class="pages-breakdown-label">${esc(k.length > 18 ? k.slice(0,16)+'…' : k)}</div>
-      </div>`).join('');
+    try {
+      const data    = await api({ action: 'getPages', period: currentPagesTab });
+      const entries = data.entries || [];
+      const total   = entries.reduce((s, e) => s + (parseInt(e.pages) || 0), 0);
+      document.getElementById('pages-number').textContent = total.toLocaleString('pt-BR');
 
-
+      const byBook = {};
+      entries.forEach(e => {
+        const key = e.bookTitle || '(sem livro)';
+        byBook[key] = (byBook[key] || 0) + (parseInt(e.pages) || 0);
+      });
+      const bk   = document.getElementById('pages-breakdown');
+      const keys = Object.keys(byBook).sort((a,b) => byBook[b] - byBook[a]);
+      bk.innerHTML = keys.slice(0, 6).map(k => `
+        <div class="pages-breakdown-item">
+          <div class="pages-breakdown-num">${byBook[k].toLocaleString('pt-BR')}</div>
+          <div class="pages-breakdown-label">${esc(k.length > 18 ? k.slice(0,16)+'…' : k)}</div>
+        </div>`).join('');
+    } catch(e) {
+      document.getElementById('pages-number').textContent = '—';
+    }
   }
 
   /* ── Year / Goal logic ── */
