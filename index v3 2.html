@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Minha Estante</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #0a0a0a;
+    --paper: #111111;
+    --cream: #1a1a1a;
+    --accent: #d63333;
+    --accent-light: #24283B;
+    --muted: #666660;
+    --muted-light: #888882;
+    --green: #3a8a4a;
+    --green-light: #0f2416;
+    --amber: #c08020;
+    --amber-light: #2a1e08;
+    --border: #252525;
+    --border-light: #2e2e2e;
+    --card: #161616;
+    --card2: #1c1c1c;
+    --radius: 4px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.3);
+    --text: #d8d4cc;
+    --text-dim: #888882;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+  }
+
+  header {
+    background: #000000;
+    color: var(--text);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo { font-family: 'Playfair Display', serif; font-size: 20px; letter-spacing: 0.02em; color: var(--text); }
+  .logo span { color: #d63333; font-style: italic; }
+  header .btn-add {
+    background: var(--accent); color: #fff; border: none;
+    padding: 7px 18px; border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: opacity 0.15s;
+  }
+  header .btn-add:hover { opacity: 0.85; }
+
+  #setup-banner {
+    background: #24283B;
+    border-bottom: 1px solid #414868;
+    padding: 1rem 2rem;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  #setup-banner p { font-size: 13px; color: #A9B1D6; flex-shrink: 0; }
+  #setup-banner input {
+    flex: 1; min-width: 220px; padding: 7px 10px;
+    border: 1px solid #414868; border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+    background: #1a1d2e; color: #A9B1D6;
+  }
+  #setup-banner .btn-sm {
+    padding: 7px 14px; border-radius: var(--radius);
+    border: 1px solid #414868; background: transparent;
+    color: #A9B1D6; font-size: 13px; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; white-space: nowrap; transition: all 0.15s;
+  }
+  #setup-banner .btn-sm:hover { background: #414868; color: #fff; }
+
+  main { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  /* ── Pages Section ── */
+  .pages-section { margin-bottom: 2rem; }
+  .section-title {
+    font-family: 'Playfair Display', serif; font-size: 16px;
+    font-weight: 500; color: var(--text); margin-bottom: 12px;
+    display: block;
+  }
+  .pages-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+  }
+  .pages-tabs {
+    display: flex; border-bottom: 1px solid var(--border);
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .pages-tabs::-webkit-scrollbar { display: none; }
+  .pages-tab {
+    padding: 10px 18px; font-family: 'DM Sans', sans-serif; font-size: 13px;
+    background: transparent; border: none; color: var(--text-dim);
+    cursor: pointer; border-bottom: 2px solid transparent;
+    margin-bottom: -1px; transition: all 0.15s; white-space: nowrap;
+  }
+  .pages-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
+  .pages-tab:hover:not(.active) { color: var(--text); }
+  .pages-body { padding: 1.25rem 1.5rem; }
+  .pages-big { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+  .pages-number {
+    font-family: 'Playfair Display', serif; font-size: 52px;
+    font-weight: 600; color: var(--text); line-height: 1;
+  }
+  .pages-unit { font-size: 16px; color: var(--text-dim); }
+  .pages-subtitle {
+    font-size: 12px; color: var(--text-dim);
+    letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 1rem;
+  }
+  .pages-breakdown {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 8px; margin-top: 12px;
+  }
+  .pages-breakdown-item {
+    background: var(--cream); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px 12px; text-align: center;
+  }
+  .pages-breakdown-num {
+    font-family: 'Playfair Display', serif; font-size: 22px;
+    font-weight: 500; color: var(--text); line-height: 1;
+  }
+  .pages-breakdown-label {
+    font-size: 11px; color: var(--text-dim); margin-top: 3px;
+    letter-spacing: 0.03em; text-transform: uppercase;
+  }
+  .pages-add-section {
+    margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .pages-add-label { font-size: 12px; color: var(--text-dim); font-style: italic; }
+
+  /* ── Annual Goal ── */
+  .annual-section { margin-bottom: 2rem; }
+  .annual-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px; gap: 12px; flex-wrap: wrap;
+  }
+  .annual-title {
+    font-family: 'Playfair Display', serif; font-size: 16px;
+    font-weight: 500; color: var(--text);
+  }
+  .year-selector { display: flex; align-items: center; gap: 6px; }
+  .year-selector button {
+    width: 26px; height: 26px; border: 1px solid var(--border);
+    border-radius: var(--radius); background: transparent; cursor: pointer;
+    font-size: 14px; color: var(--text-dim);
+    display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+  }
+  .year-selector button:hover { background: var(--cream); color: var(--text); }
+  .year-selector span {
+    font-size: 15px; font-weight: 500; color: var(--text);
+    min-width: 44px; text-align: center;
+  }
+  .goal-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.25rem 1.5rem;
+  }
+  .goal-top {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;
+  }
+  .goal-numbers { display: flex; align-items: baseline; gap: 6px; }
+  .goal-count {
+    font-family: 'Playfair Display', serif; font-size: 36px;
+    font-weight: 600; color: var(--text); line-height: 1;
+  }
+  .goal-sep { font-size: 20px; color: var(--text-dim); }
+  .goal-target {
+    font-family: 'Playfair Display', serif; font-size: 28px;
+    font-weight: 400; color: var(--text-dim); line-height: 1;
+  }
+  .goal-label { font-size: 12px; color: var(--text-dim); letter-spacing: 0.04em; text-transform: uppercase; margin-top: 4px; }
+  .goal-set { display: flex; align-items: center; gap: 6px; }
+  .goal-set input {
+    width: 64px; padding: 6px 8px; border: 1px solid var(--border);
+    border-radius: var(--radius); font-family: 'DM Sans', sans-serif;
+    font-size: 14px; text-align: center; background: var(--cream); color: var(--text);
+  }
+  .goal-set input:focus { outline: none; border-color: var(--accent); }
+  .goal-set button {
+    padding: 6px 12px; border: 1px solid var(--accent); border-radius: var(--radius);
+    background: transparent; color: var(--accent); font-size: 12px;
+    font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .goal-set button:hover { background: var(--accent); color: #fff; }
+  .goal-bar-wrap { margin-bottom: 10px; }
+  .goal-bar-track {
+    height: 10px; background: var(--cream); border-radius: 5px;
+    overflow: hidden; margin-bottom: 6px;
+  }
+  .goal-bar-fill { height: 100%; border-radius: 5px; transition: width 0.5s ease; }
+  .goal-bar-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-dim); }
+  .goal-msg { font-size: 13px; font-style: italic; color: var(--text-dim); margin-top: 6px; }
+  .goal-msg.achieved { color: var(--green); font-style: normal; font-weight: 500; }
+
+  .year-history {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px; margin-top: 1rem;
+  }
+  .year-chip {
+    background: var(--cream); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 8px 10px;
+    text-align: center; cursor: pointer; transition: all 0.15s;
+  }
+  .year-chip:hover { border-color: var(--accent); }
+  .year-chip.active-year { border-color: var(--accent); background: var(--accent-light); }
+  .year-chip-num { font-size: 13px; font-weight: 500; color: var(--text); }
+  .year-chip-count { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+  /* ── Stats ── */
+  .stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px; margin-bottom: 2rem;
+  }
+  .stat {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1rem 1.25rem; text-align: center;
+  }
+  .stat-num {
+    font-family: 'Playfair Display', serif; font-size: 32px;
+    font-weight: 600; color: var(--text); line-height: 1;
+  }
+  .stat-label { font-size: 12px; color: var(--text-dim); margin-top: 4px; letter-spacing: 0.04em; text-transform: uppercase; }
+
+  /* ── Tabs ── */
+  .tabs {
+    display: flex; gap: 0; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border);
+  }
+  .tab-btn {
+    padding: 8px 20px; font-family: 'DM Sans', sans-serif; font-size: 14px;
+    background: transparent; border: none; color: var(--text-dim); cursor: pointer;
+    border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s;
+  }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
+  .tab-btn:hover:not(.active) { color: var(--text); }
+
+  /* ── Books ── */
+  .books { display: flex; flex-direction: column; gap: 10px; }
+  .book-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.1rem 1.25rem;
+    transition: box-shadow 0.15s, border-color 0.15s; position: relative;
+  }
+  .book-card:hover { box-shadow: var(--shadow); border-color: var(--border-light); }
+  .book-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+  .book-info { flex: 1; min-width: 0; }
+  .book-title {
+    font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 500;
+    color: var(--text); margin-bottom: 3px; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .book-meta { font-size: 12px; color: var(--text-dim); margin-bottom: 10px; }
+  .badge {
+    display: inline-block; font-size: 10px; font-weight: 500;
+    padding: 2px 8px; border-radius: 20px; letter-spacing: 0.03em;
+    text-transform: uppercase; margin-left: 8px; vertical-align: middle;
+  }
+  .badge-lendo { background: #0f2416; color: #4aaa6a; }
+  .badge-concluido { background: #0a1828; color: #4a8ec0; }
+  .badge-pausado { background: var(--amber-light); color: #c09040; }
+  .book-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .btn-icon {
+    width: 30px; height: 30px; border: 1px solid var(--border); background: transparent;
+    border-radius: var(--radius); cursor: pointer; font-size: 13px; color: var(--text-dim);
+    display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+  }
+  .btn-icon:hover { background: var(--cream); color: var(--text); }
+  .btn-icon.del:hover { background: #2a0a0a; color: #e05050; border-color: #5a1818; }
+
+  /* ── Progress ── */
+  .progress-wrap { margin-top: 8px; }
+  .progress-track {
+    height: 6px; background: var(--cream); border-radius: 3px;
+    overflow: hidden; margin-bottom: 6px;
+  }
+  .progress-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-dim); margin-bottom: 8px; }
+
+  /* MOBILE FIX: quick-progress */
+  .quick-progress {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--cream); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 8px 12px; margin-top: 8px;
+    flex-wrap: wrap;
+  }
+  .quick-progress label {
+    font-size: 11px; color: var(--text-dim); white-space: nowrap;
+    letter-spacing: 0.04em; text-transform: uppercase; flex-shrink: 0;
+  }
+  .quick-progress input[type=range] {
+    flex: 1; min-width: 80px; accent-color: var(--accent); height: 4px; cursor: pointer;
+  }
+  .quick-progress .pct-badge {
+    font-size: 13px; font-weight: 500; color: var(--text);
+    min-width: 36px; text-align: right; flex-shrink: 0;
+  }
+  .quick-progress .btn-save-pct {
+    padding: 5px 12px; border: 1px solid var(--accent); border-radius: var(--radius);
+    background: transparent; color: var(--accent); font-size: 12px;
+    font-family: 'DM Sans', sans-serif; cursor: pointer; flex-shrink: 0;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .quick-progress .btn-save-pct:hover { background: var(--accent); color: #fff; }
+
+  /* ── Empty / Toast / Modal ── */
+  .empty { text-align: center; padding: 4rem 1rem; color: var(--text-dim); }
+  .empty-icon { font-size: 40px; margin-bottom: 1rem; opacity: 0.4; }
+  .empty p { font-size: 14px; }
+
+  #toast {
+    position: fixed; bottom: 2rem; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #000; color: var(--text); border: 1px solid var(--border-light);
+    padding: 10px 20px; border-radius: 20px; font-size: 13px;
+    opacity: 0; transition: all 0.25s; z-index: 999; pointer-events: none; white-space: nowrap;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast.err { background: #2a0a0a; border-color: #5a1818; color: #e05050; }
+
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+    display: none; align-items: center; justify-content: center; z-index: 200; padding: 1rem;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--card); border: 1px solid var(--border-light);
+    border-radius: 6px; padding: 1.75rem; width: 100%; max-width: 500px;
+    max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+  }
+  .modal h2 {
+    font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 500;
+    margin-bottom: 1.25rem; color: var(--text);
+  }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-grid .full { grid-column: 1 / -1; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 12px; font-weight: 500; color: var(--text-dim); letter-spacing: 0.04em; text-transform: uppercase; }
+  .field input, .field select {
+    padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif; font-size: 14px;
+    background: var(--cream); color: var(--text); transition: border-color 0.15s;
+  }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--accent); }
+  .field select option { background: var(--cream); color: var(--text); }
+  .modal-footer {
+    display: flex; justify-content: flex-end; gap: 8px;
+    margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--border);
+  }
+  .btn-cancel {
+    padding: 8px 18px; border: 1px solid var(--border); border-radius: var(--radius);
+    background: transparent; font-family: 'DM Sans', sans-serif;
+    font-size: 14px; cursor: pointer; color: var(--text-dim);
+  }
+  .btn-cancel:hover { background: var(--cream); color: var(--text); }
+  .btn-save {
+    padding: 8px 20px; border: none; border-radius: var(--radius);
+    background: var(--accent); color: #fff; font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 500; cursor: pointer; transition: opacity 0.15s;
+  }
+  .btn-save:hover { opacity: 0.85; }
+  .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .spinner {
+    width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff; border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: inline-block; vertical-align: middle; margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--paper); }
+  ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #444; }
+
+  @media (max-width: 520px) {
+    header { padding: 0 1rem; }
+    main { padding: 1.5rem 1rem; }
+    .form-grid { grid-template-columns: 1fr; }
+    .form-grid .full { grid-column: 1; }
+    .book-title { white-space: normal; }
+    .pages-number { font-size: 40px; }
+    .goal-count { font-size: 28px; }
+    .goal-target { font-size: 22px; }
+    /* CORREÇÃO: botão salvar em linha própria, sem sobrepor slider */
+    .quick-progress {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      grid-template-rows: auto auto;
+      row-gap: 8px;
+      column-gap: 10px;
+    }
+    .quick-progress label  { grid-column: 1; grid-row: 1; }
+    .quick-progress input[type=range] { grid-column: 2; grid-row: 1; }
+    .quick-progress .pct-badge { grid-column: 3; grid-row: 1; }
+    .quick-progress .btn-save-pct {
+      grid-column: 1 / -1; grid-row: 2;
+      width: 100%; text-align: center; padding: 8px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">minha <span>estante</span></div>
+  <button class="btn-add" onclick="openModal()">+ Adicionar livro</button>
+</header>
+
+<div id="setup-banner">
+  <p>🔗 URL do seu Apps Script:</p>
+  <input type="text" id="api-url-input" placeholder="Cole aqui a URL do Web App (Apps Script)" />
+  <button class="btn-sm" onclick="saveApiUrl()">Salvar</button>
+</div>
+
+<main>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="setTab('Lendo', this)">Lendo</button>
+    <button class="tab-btn" onclick="setTab('Concluído', this)">Concluídos</button>
+    <button class="tab-btn" onclick="setTab('Pausado', this)">Pausados</button>
+    <button class="tab-btn" onclick="setTab('todos', this)">Todos</button>
+  </div>
+
+  <div class="books" id="books-list"></div>
+
+  <!-- Páginas lidas -->
+  <div class="pages-section">
+    <span class="section-title">Páginas lidas</span>
+    <div class="pages-card">
+      <div class="pages-tabs">
+        <button class="pages-tab active" onclick="setPagesTab('hoje', this)">Hoje</button>
+        <button class="pages-tab" onclick="setPagesTab('semana', this)">Esta semana</button>
+        <button class="pages-tab" onclick="setPagesTab('mes', this)">Este mês</button>
+        <button class="pages-tab" onclick="setPagesTab('ano', this)">Este ano</button>
+        <button class="pages-tab" onclick="setPagesTab('total', this)">Total</button>
+      </div>
+      <div class="pages-body">
+        <div class="pages-big">
+          <span class="pages-number" id="pages-number">0</span>
+          <span class="pages-unit">páginas</span>
+        </div>
+        <div class="pages-subtitle" id="pages-subtitle">lidas hoje</div>
+        <div class="pages-breakdown" id="pages-breakdown"></div>
+        <div class="pages-add-section">
+          <span class="pages-add-label">💡 As páginas são calculadas automaticamente ao salvar o progresso de cada livro.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Meta anual -->
+  <div class="annual-section">
+    <div class="annual-header">
+      <span class="annual-title">Meta anual de leitura</span>
+      <div class="year-selector">
+        <button onclick="changeYear(-1)">&#8249;</button>
+        <span id="selected-year"></span>
+        <button onclick="changeYear(1)">&#8250;</button>
+      </div>
+    </div>
+    <div class="goal-card">
+      <div class="goal-top">
+        <div>
+          <div class="goal-numbers">
+            <span class="goal-count" id="goal-count">0</span>
+            <span class="goal-sep">/</span>
+            <span class="goal-target" id="goal-target">—</span>
+          </div>
+          <div class="goal-label">livros concluídos</div>
+        </div>
+        <div class="goal-set">
+          <input type="number" id="goal-input" min="1" max="999" placeholder="Meta" />
+          <button onclick="saveGoal()">Definir meta</button>
+        </div>
+      </div>
+      <div class="goal-bar-wrap" id="goal-bar-wrap">
+        <div class="goal-bar-track">
+          <div class="goal-bar-fill" id="goal-bar-fill" style="width:0%"></div>
+        </div>
+        <div class="goal-bar-labels">
+          <span id="goal-bar-pct">0%</span>
+          <span id="goal-bar-remaining"></span>
+        </div>
+      </div>
+      <div class="goal-msg" id="goal-msg"></div>
+    </div>
+    <div class="year-history" id="year-history"></div>
+  </div>
+</main>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h2 id="modal-title">Adicionar livro</h2>
+    <div class="form-grid">
+      <div class="field full">
+        <label>Título *</label>
+        <input type="text" id="f-titulo" placeholder="Ex: O Senhor dos Anéis" />
+      </div>
+      <div class="field full">
+        <label>Autor</label>
+        <input type="text" id="f-autor" placeholder="Ex: J.R.R. Tolkien" />
+      </div>
+      <div class="field">
+        <label>Edição</label>
+        <input type="text" id="f-edicao" placeholder="Ex: 2ª edição" />
+      </div>
+      <div class="field">
+        <label>Nº de páginas</label>
+        <input type="number" id="f-paginas" placeholder="Ex: 400" min="1" />
+      </div>
+      <div class="field">
+        <label>Progresso (%)</label>
+        <input type="number" id="f-progresso" placeholder="0" min="0" max="100" />
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="f-status">
+          <option value="Lendo">Lendo</option>
+          <option value="Concluído">Concluído</option>
+          <option value="Pausado">Pausado</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Data de início</label>
+        <input type="date" id="f-inicio" />
+      </div>
+      <div class="field">
+        <label>Data de fim</label>
+        <input type="date" id="f-fim" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" id="btn-save" onclick="saveBook()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  const API_KEY   = 'ebook_api_url';
+  const GOALS_KEY = 'ebook_goals';
+  // pages log agora na planilha
+
+  let apiUrl   = localStorage.getItem(API_KEY) || '';
+  let books    = [];
+  let editingId  = null;
+  let currentTab = 'Lendo';
+  let selectedYear = new Date().getFullYear();
+  let goals    = JSON.parse(localStorage.getItem(GOALS_KEY) || '{}');
+  let pagesLog = []; // não usado — dados na planilha
+  let currentPagesTab = 'hoje';
+
+  /* ── Date helpers ── */
+  function todayStr() { return new Date().toISOString().slice(0, 10); }
+  function getWeekStart() {
+    const d = new Date(), day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(d.setDate(diff)).toISOString().slice(0, 10);
+  }
+  function getMonthStart() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
+  }
+  function getYearStart() { return `${new Date().getFullYear()}-01-01`; }
+
+  /* ── Pages logic ── */
+  // savePagesLog removido — dados salvos na planilha via API
+
+  async function registerPagesFromProgress(book, oldPct, newPct) {
+    const totalPages = parseInt(book.paginas) || 0;
+    if (!totalPages) return 0;
+    const diff = newPct - oldPct;
+    if (diff <= 0) return 0;
+    const pages = Math.round((diff / 100) * totalPages);
+    if (pages <= 0) return 0;
+    await api({
+      action: 'logPages',
+      date: todayStr(),
+      pages,
+      bookId: book.id,
+      bookTitle: book.titulo
+    });
+    return pages;
+  }
+
+  // getPagesForPeriod removido — filtragem feita no servidor
+
+  function setPagesTab(tab, el) {
+    currentPagesTab = tab;
+    document.querySelectorAll('.pages-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    renderPages();
+  }
+
+  async function renderPages() {
+    const subtitles = {
+      hoje:   'lidas hoje',
+      semana: 'lidas esta semana',
+      mes:    'lidas este mês',
+      ano:    `lidas em ${new Date().getFullYear()}`,
+      total:  'lidas no total'
+    };
+    document.getElementById('pages-subtitle').textContent = subtitles[currentPagesTab];
+    document.getElementById('pages-number').textContent = '…';
+
+    try {
+      const data    = await api({ action: 'getPages', period: currentPagesTab });
+      const entries = data.entries || [];
+      const total   = entries.reduce((s, e) => s + (parseInt(e.pages) || 0), 0);
+      document.getElementById('pages-number').textContent = total.toLocaleString('pt-BR');
+
+      const byBook = {};
+      entries.forEach(e => {
+        const key = e.bookTitle || '(sem livro)';
+        byBook[key] = (byBook[key] || 0) + (parseInt(e.pages) || 0);
+      });
+      const bk   = document.getElementById('pages-breakdown');
+      const keys = Object.keys(byBook).sort((a,b) => byBook[b] - byBook[a]);
+      bk.innerHTML = keys.slice(0, 6).map(k => `
+        <div class="pages-breakdown-item">
+          <div class="pages-breakdown-num">${byBook[k].toLocaleString('pt-BR')}</div>
+          <div class="pages-breakdown-label">${esc(k.length > 18 ? k.slice(0,16)+'…' : k)}</div>
+        </div>`).join('');
+    } catch(e) {
+      document.getElementById('pages-number').textContent = '—';
+    }
+  }
+
+  /* ── Year / Goal logic ── */
+  function changeYear(delta) {
+    selectedYear += delta;
+    document.getElementById('selected-year').textContent = selectedYear;
+    document.getElementById('goal-input').value = goals[selectedYear] || '';
+    renderGoal(); renderYearHistory();
+  }
+
+  function saveGoal() {
+    const val = parseInt(document.getElementById('goal-input').value);
+    if (!val || val < 1) return toast('Digite uma meta válida.', true);
+    goals[selectedYear] = val;
+    localStorage.setItem(GOALS_KEY, JSON.stringify(goals));
+    renderGoal(); renderYearHistory();
+    toast('Meta de ' + selectedYear + ' definida: ' + val + ' livros!');
+  }
+
+  function getYearFromDate(d) {
+    if (!d) return null;
+    if (d.includes('/')) return parseInt(d.split('/')[2]);
+    if (d.includes('-')) return parseInt(d.split('-')[0]);
+    return null;
+  }
+
+  function renderGoal() {
+    const year = selectedYear;
+    const concluded = books.filter(b => {
+      if (b.status !== 'Concluído') return false;
+      const yr = getYearFromDate(b.fim) || getYearFromDate(b.inicio);
+      return yr === year;
+    }).length;
+    const goal = goals[year] || 0;
+    document.getElementById('goal-count').textContent  = concluded;
+    document.getElementById('goal-target').textContent = goal || '—';
+    document.getElementById('goal-input').value        = goal || '';
+
+    const wrap  = document.getElementById('goal-bar-wrap');
+    const fill  = document.getElementById('goal-bar-fill');
+    const pctEl = document.getElementById('goal-bar-pct');
+    const remEl = document.getElementById('goal-bar-remaining');
+    const msgEl = document.getElementById('goal-msg');
+
+    if (!goal) {
+      wrap.style.display = 'none';
+      msgEl.textContent = 'Defina uma meta para ' + year + ' usando o campo acima.';
+      msgEl.className = 'goal-msg'; return;
+    }
+    wrap.style.display = 'block';
+    const pct  = Math.min(100, Math.round((concluded / goal) * 100));
+    const rem  = Math.max(0, goal - concluded);
+    const barColor = pct >= 100 ? '#3a8a4a' : pct >= 60 ? '#2a6098' : '#c08020';
+    fill.style.width = pct + '%'; fill.style.background = barColor;
+    pctEl.textContent = pct + '%';
+    remEl.textContent = rem > 0 ? 'faltam ' + rem + ' livro' + (rem > 1 ? 's' : '') : '✓ meta batida!';
+
+    if (pct >= 100) {
+      msgEl.textContent = '🎉 Parabéns! Você bateu sua meta de ' + goal + ' livros em ' + year + '!';
+      msgEl.className = 'goal-msg achieved';
+    } else if (pct >= 75) {
+      msgEl.textContent = 'Quase lá! Só faltam ' + rem + ' livro' + (rem > 1 ? 's' : '') + ' para bater a meta.';
+      msgEl.className = 'goal-msg';
+    } else if (concluded > 0) {
+      msgEl.textContent = 'Continue assim — você já leu ' + concluded + ' de ' + goal + ' livros.';
+      msgEl.className = 'goal-msg';
+    } else {
+      msgEl.textContent = 'Nenhum livro concluído em ' + year + ' ainda. Bora começar!';
+      msgEl.className = 'goal-msg';
+    }
+  }
+
+  function renderYearHistory() {
+    const yearsWithBooks = {};
+    books.forEach(b => {
+      if (b.status !== 'Concluído') return;
+      const yr = getYearFromDate(b.fim) || getYearFromDate(b.inicio);
+      if (yr) yearsWithBooks[yr] = (yearsWithBooks[yr] || 0) + 1;
+    });
+    Object.keys(goals).forEach(y => { if (!yearsWithBooks[y]) yearsWithBooks[y] = 0; });
+    const years = Object.keys(yearsWithBooks).map(Number).sort((a,b) => b - a);
+    const container = document.getElementById('year-history');
+    if (!years.length) { container.innerHTML = ''; return; }
+    container.innerHTML = years.map(yr => {
+      const count = yearsWithBooks[yr] || 0, g = goals[yr];
+      const label = g ? count + '/' + g : count + ' lido' + (count !== 1 ? 's' : '');
+      return `<div class="year-chip ${yr === selectedYear ? 'active-year' : ''}" onclick="jumpToYear(${yr})">
+        <div class="year-chip-num">${yr}</div>
+        <div class="year-chip-count">${label}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function jumpToYear(yr) {
+    selectedYear = yr;
+    document.getElementById('selected-year').textContent = yr;
+    document.getElementById('goal-input').value = goals[yr] || '';
+    renderGoal(); renderYearHistory();
+  }
+
+  /* ── Init ── */
+  document.getElementById('selected-year').textContent = selectedYear;
+  if (apiUrl) {
+    document.getElementById('api-url-input').value = apiUrl;
+    document.getElementById('setup-banner').style.display = 'none';
+    loadBooks();
+  } else {
+    renderPages();
+  }
+
+  function saveApiUrl() {
+    const val = document.getElementById('api-url-input').value.trim();
+    if (!val) return toast('Cole a URL do Apps Script primeiro.', true);
+    apiUrl = val;
+    localStorage.setItem(API_KEY, val);
+    document.getElementById('setup-banner').style.display = 'none';
+    loadBooks();
+  }
+
+  async function api(params) {
+    if (!apiUrl) { toast('Configure a URL do Apps Script primeiro.', true); return; }
+    const url = apiUrl + '?' + new URLSearchParams(params);
+    const res  = await fetch(url);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    return data;
+  }
+
+  async function loadBooks() {
+    try {
+      const data = await api({ action: 'getAll' });
+      books = data.books || [];
+      render();
+    } catch (e) { toast('Erro ao carregar: ' + e.message, true); }
+  }
+
+  function setTab(tab, el) {
+    currentTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    render();
+  }
+
+  function render() {
+    renderStats(); renderBooks(); renderGoal(); renderYearHistory(); renderPages();
+  }
+
+  function renderStats() {
+    const total = books.length;
+    const lendo = books.filter(b => b.status === 'Lendo').length;
+    const concluidos = books.filter(b => b.status === 'Concluído').length;
+    const pausados   = books.filter(b => b.status === 'Pausado').length;
+    document.getElementById('stats').innerHTML = `
+      <div class="stat"><div class="stat-num">${total}</div><div class="stat-label">Total</div></div>
+      <div class="stat"><div class="stat-num">${lendo}</div><div class="stat-label">Lendo</div></div>
+      <div class="stat"><div class="stat-num">${concluidos}</div><div class="stat-label">Concluídos</div></div>
+      <div class="stat"><div class="stat-num">${pausados}</div><div class="stat-label">Pausados</div></div>`;
+  }
+
+  function renderBooks() {
+    const list = document.getElementById('books-list');
+    let filtered = currentTab === 'todos' ? books : books.filter(b => b.status === currentTab);
+    if (!filtered.length) {
+      list.innerHTML = `<div class="empty"><div class="empty-icon">📚</div><p>Nenhum livro aqui ainda.</p></div>`;
+      return;
+    }
+    list.innerHTML = filtered.map(b => {
+      const pct = Math.min(100, Math.max(0, parseInt(b.progresso) || 0));
+      const barColor   = pct === 100 ? '#3a8a4a' : pct > 50 ? '#2a6098' : '#c08020';
+      const badgeClass = b.status === 'Lendo' ? 'badge-lendo' : b.status === 'Concluído' ? 'badge-concluido' : 'badge-pausado';
+      const meta    = [b.autor, b.edicao, b.paginas ? b.paginas + ' págs' : ''].filter(Boolean).join(' · ');
+      const periodo = [fmtDate(b.inicio) && 'Início: ' + fmtDate(b.inicio), fmtDate(b.fim) && 'Fim: ' + fmtDate(b.fim)].filter(Boolean).join(' · ');
+      return `
+        <div class="book-card">
+          <div class="book-top">
+            <div class="book-info">
+              <div class="book-title">${esc(b.titulo)}<span class="badge ${badgeClass}">${b.status}</span></div>
+              <div class="book-meta">${[meta, periodo].filter(Boolean).join(' · ')}</div>
+            </div>
+            <div class="book-actions">
+              <button class="btn-icon" onclick='openEdit(${JSON.stringify(b)})' title="Editar">✎</button>
+              <button class="btn-icon del" onclick="deleteBook(${b.id})" title="Remover">✕</button>
+            </div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${barColor}"></div></div>
+            <div class="progress-label"><span>${pct}% lido</span><span>${pct === 100 ? '✓ Concluído' : ''}</span></div>
+            <div class="quick-progress">
+              <label>Progresso</label>
+              <input type="range" min="0" max="100" step="1" value="${pct}" id="slider-${b.id}"
+                oninput="document.getElementById('pct-${b.id}').textContent=this.value+'%'" />
+              <span class="pct-badge" id="pct-${b.id}">${pct}%</span>
+              <button class="btn-save-pct" onclick="saveProgress(${b.id}, '${esc(b.titulo)}')">Salvar</button>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function fmtDate(d) {
+    if (!d) return '';
+    if (d.includes('/')) {
+      const [day, mo, yr] = d.split('/');
+      return `${day} ${['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'][parseInt(mo)-1]} ${yr}`;
+    }
+    if (d.includes('-')) {
+      const [yr, mo, day] = d.split('-');
+      return `${day} ${['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'][parseInt(mo)-1]} ${yr}`;
+    }
+    return d;
+  }
+
+  function esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function openModal() {
+    editingId = null;
+    document.getElementById('modal-title').textContent = 'Adicionar livro';
+    ['titulo','autor','edicao','paginas','progresso','inicio','fim'].forEach(f => document.getElementById('f-'+f).value = '');
+    document.getElementById('f-status').value = 'Lendo';
+    document.getElementById('modal-overlay').classList.add('open');
+  }
+
+  function openEdit(book) {
+    editingId = book.id;
+    document.getElementById('modal-title').textContent = 'Editar livro';
+    document.getElementById('f-titulo').value    = book.titulo || '';
+    document.getElementById('f-autor').value     = book.autor || '';
+    document.getElementById('f-edicao').value    = book.edicao || '';
+    document.getElementById('f-paginas').value   = book.paginas || '';
+    document.getElementById('f-progresso').value = book.progresso || '';
+    document.getElementById('f-status').value    = book.status || 'Lendo';
+    document.getElementById('f-inicio').value    = toInputDate(book.inicio);
+    document.getElementById('f-fim').value       = toInputDate(book.fim);
+    document.getElementById('modal-overlay').classList.add('open');
+  }
+
+  function toInputDate(d) {
+    if (!d) return '';
+    if (d.includes('-') && d.length === 10) return d;
+    if (d.includes('/')) {
+      const [day, mo, yr] = d.split('/');
+      return `${yr}-${mo.padStart(2,'0')}-${day.padStart(2,'0')}`;
+    }
+    return '';
+  }
+
+  function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+
+  async function saveBook() {
+    const titulo = document.getElementById('f-titulo').value.trim();
+    if (!titulo) return toast('Título é obrigatório.', true);
+    const book = {
+      titulo, autor: document.getElementById('f-autor').value.trim(),
+      edicao: document.getElementById('f-edicao').value.trim(),
+      paginas: document.getElementById('f-paginas').value.trim(),
+      progresso: document.getElementById('f-progresso').value.trim() || '0',
+      status: document.getElementById('f-status').value,
+      inicio: document.getElementById('f-inicio').value ? fmtDate(document.getElementById('f-inicio').value) : '',
+      fim:    document.getElementById('f-fim').value    ? fmtDate(document.getElementById('f-fim').value)    : ''
+    };
+    const btn = document.getElementById('btn-save');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Salvando...';
+    try {
+      if (editingId) {
+        await api({ action: 'update', id: editingId, ...book });
+        const idx = books.findIndex(b => b.id === editingId);
+        if (idx !== -1) books[idx] = { ...book, id: editingId };
+        toast('Livro atualizado!');
+      } else {
+        const res = await api({ action: 'add', ...book });
+        books.push({ ...book, id: res.id });
+        toast('Livro adicionado!');
+      }
+      closeModal(); render();
+    } catch (e) { toast('Erro ao salvar: ' + e.message, true); }
+    finally { btn.disabled = false; btn.textContent = 'Salvar'; }
+  }
+
+  async function saveProgress(id, titulo) {
+    const slider = document.getElementById('slider-' + id);
+    if (!slider) return;
+    const newPct = parseInt(slider.value);
+    const book   = books.find(b => b.id === id);
+    if (!book) return;
+    const oldPct = parseInt(book.progresso) || 0;
+    try {
+      await api({ action: 'update', id, ...book, progresso: newPct });
+      const pagesAdded = await registerPagesFromProgress(book, oldPct, newPct);
+      book.progresso = newPct; render();
+      if (pagesAdded > 0) {
+        toast(`Progresso salvo! +${pagesAdded} páginas registradas.`);
+      } else {
+        toast('Progresso de "' + titulo + '" atualizado para ' + newPct + '%!');
+      }
+    } catch (e) { toast('Erro ao salvar progresso: ' + e.message, true); }
+  }
+
+  async function deleteBook(id) {
+    if (!confirm('Remover este livro?')) return;
+    try {
+      await api({ action: 'delete', id });
+      books = books.filter(b => b.id !== id); render();
+      toast('Livro removido.');
+    } catch (e) { toast('Erro ao remover: ' + e.message, true); }
+  }
+
+  let toastTimer;
+  function toast(msg, isErr = false) {
+    const el = document.getElementById('toast');
+    el.textContent = msg; el.className = 'show' + (isErr ? ' err' : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.className = '', 3500);
+  }
+
+  document.getElementById('modal-overlay').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+</script>
+</body>
+</html>
