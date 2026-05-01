@@ -557,7 +557,7 @@
 <script>
   const API_KEY   = 'ebook_api_url';
   const GOALS_KEY = 'ebook_goals';
-  const PAGES_KEY = 'ebook_pages_log';
+  // pages log agora na planilha
 
   let apiUrl   = localStorage.getItem(API_KEY) || '';
   let books    = [];
@@ -565,7 +565,7 @@
   let currentTab = 'Lendo';
   let selectedYear = new Date().getFullYear();
   let goals    = JSON.parse(localStorage.getItem(GOALS_KEY) || '{}');
-  let pagesLog = JSON.parse(localStorage.getItem(PAGES_KEY) || '[]');
+  let pagesLog = []; // não usado — dados na planilha
   let currentPagesTab = 'hoje';
 
   /* ── Date helpers ── */
@@ -582,31 +582,26 @@
   function getYearStart() { return `${new Date().getFullYear()}-01-01`; }
 
   /* ── Pages logic ── */
-  function savePagesLog() { localStorage.setItem(PAGES_KEY, JSON.stringify(pagesLog)); }
+  // savePagesLog removido — dados salvos na planilha via API
 
-  function registerPagesFromProgress(book, oldPct, newPct) {
+  async function registerPagesFromProgress(book, oldPct, newPct) {
     const totalPages = parseInt(book.paginas) || 0;
-    if (!totalPages) return 0; // sem total de páginas cadastrado, não registra
+    if (!totalPages) return 0;
     const diff = newPct - oldPct;
     if (diff <= 0) return 0;
     const pages = Math.round((diff / 100) * totalPages);
     if (pages <= 0) return 0;
-    pagesLog.push({ date: todayStr(), pages, bookId: book.id, bookTitle: book.titulo });
-    savePagesLog();
+    await api({
+      action: 'logPages',
+      date: todayStr(),
+      pages,
+      bookId: book.id,
+      bookTitle: book.titulo
+    });
     return pages;
   }
 
-  function getPagesForPeriod(tab) {
-    const today = todayStr(), weekStart = getWeekStart(),
-          monthStart = getMonthStart(), yearStart = getYearStart();
-    return pagesLog.filter(e => {
-      if (tab === 'hoje')   return e.date === today;
-      if (tab === 'semana') return e.date >= weekStart;
-      if (tab === 'mes')    return e.date >= monthStart;
-      if (tab === 'ano')    return e.date >= yearStart;
-      return true;
-    });
-  }
+  // getPagesForPeriod removido — filtragem feita no servidor
 
   function setPagesTab(tab, el) {
     currentPagesTab = tab;
@@ -932,7 +927,7 @@
     const oldPct = parseInt(book.progresso) || 0;
     try {
       await api({ action: 'update', id, ...book, progresso: newPct });
-      const pagesAdded = registerPagesFromProgress(book, oldPct, newPct);
+      const pagesAdded = await registerPagesFromProgress(book, oldPct, newPct);
       book.progresso = newPct; render();
       if (pagesAdded > 0) {
         toast(`Progresso salvo! +${pagesAdded} páginas registradas.`);
