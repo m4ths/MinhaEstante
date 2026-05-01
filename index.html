@@ -661,6 +661,9 @@
     if (!d) return null;
     if (d.includes('/')) return parseInt(d.split('/')[2]);
     if (d.includes('-')) return parseInt(d.split('-')[0]);
+    // formato "08 set. 2025" ou "01 jan. 2026" (Google Sheets)
+    const m = String(d).match(/\b(20\d{2})\b/);
+    if (m) return parseInt(m[1]);
     return null;
   }
 
