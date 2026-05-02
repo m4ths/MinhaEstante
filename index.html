@@ -391,6 +391,19 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+
+  /* ── Estimativa ── */
+  .estimate-row {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 8px; padding: 8px 12px;
+    background: var(--cream); border: 1px solid var(--border);
+    border-radius: var(--radius); font-size: 12px; color: var(--text-dim);
+  }
+  .estimate-icon { font-size: 14px; flex-shrink: 0; }
+  .estimate-text { flex: 1; }
+  .estimate-text strong { color: var(--text); font-weight: 500; }
+  .estimate-avg { font-size: 11px; color: var(--text-dim); margin-left: auto; flex-shrink: 0; }
+
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: var(--paper); }
   ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
@@ -575,6 +588,7 @@
   let selectedYear = new Date().getFullYear();
   let goals    = JSON.parse(localStorage.getItem(GOALS_KEY) || '{}');
   let currentPagesTab = 'hoje';
+  let avgPagesPerDay = 0; // calculado do histórico total
 
   /* ── Date helpers ── */
   function todayStr() { return new Date().toISOString().slice(0, 10); }
@@ -779,10 +793,38 @@
 
   async function loadBooks() {
     try {
-      const data = await api({ action: 'getAll' });
-      books = data.books || [];
+      const [booksData, pagesData] = await Promise.all([
+        api({ action: 'getAll' }),
+        api({ action: 'getPages', period: 'total' })
+      ]);
+      books = booksData.books || [];
+      computeAvgPagesPerDay(pagesData.entries || []);
       render();
     } catch (e) { toast('Erro ao carregar: ' + e.message, true); }
+  }
+
+  function computeAvgPagesPerDay(entries) {
+    if (!entries.length) { avgPagesPerDay = 0; return; }
+    const total = entries.reduce((s, e) => s + (parseInt(e.pages) || 0), 0);
+    // dias únicos com leitura
+    const days = new Set(entries.map(e => e.date)).size;
+    avgPagesPerDay = days > 0 ? total / days : 0;
+  }
+
+  function estimateFinish(book) {
+    if (avgPagesPerDay <= 0) return null;
+    const totalPages = parseInt(book.paginas) || 0;
+    if (!totalPages) return null;
+    const pct = parseInt(book.progresso) || 0;
+    const pagesRead = Math.round((pct / 100) * totalPages);
+    const remaining = totalPages - pagesRead;
+    if (remaining <= 0) return null;
+    const days = Math.ceil(remaining / avgPagesPerDay);
+    const finish = new Date();
+    finish.setDate(finish.getDate() + days);
+    const months = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+    const dateStr = `${finish.getDate()} ${months[finish.getMonth()]} ${finish.getFullYear()}`;
+    return { days, dateStr, remaining, avg: Math.round(avgPagesPerDay) };
   }
 
   function setTab(tab, el) {
@@ -843,6 +885,19 @@
               <span class="pct-badge" id="pct-${b.id}">${pct}%</span>
               <button class="btn-save-pct" onclick="saveProgress(${b.id}, '${esc(b.titulo)}')">Salvar</button>
             </div>
+            ${b.status === 'Lendo' ? (() => {
+              const est = estimateFinish(b);
+              if (!est) return '';
+              return `<div class="estimate-row">
+                <span class="estimate-icon">📅</span>
+                <span class="estimate-text">
+                  Termina em aprox. <strong>${est.days} dia${est.days !== 1 ? 's' : ''}</strong>
+                  — por volta de <strong>${est.dateStr}</strong>
+                  <br><span style="font-size:11px">${est.remaining} págs restantes</span>
+                </span>
+                <span class="estimate-avg">${est.avg} págs/dia</span>
+              </div>`;
+            })() : ''}
           </div>
         </div>`;
     }).join('');
