@@ -17,10 +17,12 @@
     --accent-light: #24283B;
     --muted: #666660;
     --muted-light: #888882;
-    --green: #3a8a4a;
-    --green-light: #0f2416;
-    --amber: #c08020;
-    --amber-light: #2a1e08;
+    --green: #9ece6a;
+    --green-light: #1a2b1a;
+    --amber: #e0af68;
+    --amber-light: #2a2018;
+    --blue-tn: #7aa2f7;
+    --blue-tn-light: #1a2b3c;
     --border: #252525;
     --border-light: #2e2e2e;
     --card: #161616;
@@ -206,7 +208,7 @@
   .goal-bar-fill { height: 100%; border-radius: 5px; transition: width 0.5s ease; }
   .goal-bar-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-dim); }
   .goal-msg { font-size: 13px; font-style: italic; color: var(--text-dim); margin-top: 6px; }
-  .goal-msg.achieved { color: var(--green); font-style: normal; font-weight: 500; }
+  .goal-msg.achieved { color: #9ece6a; font-style: normal; font-weight: 500; }
 
   .year-history {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
@@ -270,9 +272,9 @@
     padding: 2px 8px; border-radius: 20px; letter-spacing: 0.03em;
     text-transform: uppercase; margin-left: 8px; vertical-align: middle;
   }
-  .badge-lendo { background: #0f2416; color: #4aaa6a; }
-  .badge-concluido { background: #0a1828; color: #4a8ec0; }
-  .badge-pausado { background: var(--amber-light); color: #c09040; }
+  .badge-lendo { background: #1a2b3c; color: #7aa2f7; }
+  .badge-concluido { background: #1a2b1a; color: #9ece6a; }
+  .badge-pausado { background: #2a2018; color: #e0af68; }
   .book-actions { display: flex; gap: 6px; flex-shrink: 0; }
   .btn-icon {
     width: 30px; height: 30px; border: 1px solid var(--border); background: transparent;
@@ -280,7 +282,7 @@
     display: flex; align-items: center; justify-content: center; transition: all 0.15s;
   }
   .btn-icon:hover { background: var(--cream); color: var(--text); }
-  .btn-icon.del:hover { background: #2a0a0a; color: #e05050; border-color: #5a1818; }
+  .btn-icon.del:hover { background: #2a0f0f; color: #f7768e; border-color: #5a1a1a; }
 
   /* ── Progress ── */
   .progress-wrap { margin-top: 8px; }
@@ -693,7 +695,7 @@
     wrap.style.display = 'block';
     const pct  = Math.min(100, Math.round((concluded / goal) * 100));
     const rem  = Math.max(0, goal - concluded);
-    const barColor = pct >= 100 ? '#3a8a4a' : pct >= 60 ? '#2a6098' : '#c08020';
+    const barColor = pct >= 100 ? '#9ece6a' : pct >= 60 ? '#7aa2f7' : '#e0af68';
     fill.style.width = pct + '%'; fill.style.background = barColor;
     pctEl.textContent = pct + '%';
     remEl.textContent = rem > 0 ? 'faltam ' + rem + ' livro' + (rem > 1 ? 's' : '') : '✓ meta batida!';
@@ -809,7 +811,7 @@
     }
     list.innerHTML = filtered.map(b => {
       const pct = Math.min(100, Math.max(0, parseInt(b.progresso) || 0));
-      const barColor   = pct === 100 ? '#3a8a4a' : pct > 50 ? '#2a6098' : '#c08020';
+      const barColor   = pct === 100 ? '#9ece6a' : pct > 50 ? '#7aa2f7' : '#e0af68';
       const badgeClass = b.status === 'Lendo' ? 'badge-lendo' : b.status === 'Concluído' ? 'badge-concluido' : 'badge-pausado';
       const meta    = [b.autor, b.edicao, b.paginas ? b.paginas + ' págs' : ''].filter(Boolean).join(' · ');
       const periodo = [fmtDate(b.inicio) && 'Início: ' + fmtDate(b.inicio), fmtDate(b.fim) && 'Fim: ' + fmtDate(b.fim)].filter(Boolean).join(' · ');
