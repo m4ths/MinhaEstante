@@ -45,28 +45,88 @@
   /* ── Paleta Personalizada (light) ── */
   [data-theme="light"] {
     --paper: #FCF9EA;
-    --cream: #BADFDB;
-    --card: #d4efec;
-    --card2: #BADFDB;
-    --border: #9ecfcb;
-    --border-light: #85bfba;
+    --cream: #FCF9EA;
+    --card: #FCF9EA;
+    --card2: #FCF9EA;
+    --border: #BADFDB;
+    --border-light: #9ecfcb;
     --text: #3d2b1f;
     --text-dim: #7a5c4e;
     --accent: #FFA4A4;
     --accent-light: #FFBDBD;
     --green: #5a9e6f;
-    --green-light: #d4eedd;
+    --green-light: #e8f7f0;
     --amber: #c47c2b;
     --amber-light: #fdebd0;
     --blue-tn: #5b8fd4;
-    --blue-tn-light: #d0e2f5;
+    --blue-tn-light: #ddeefa;
     --header-bg: #BADFDB;
-    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
+    --shadow: 0 1px 4px rgba(186,223,219,0.5);
     --radius: 4px;
     --setup-bg: #FFBDBD;
     --setup-border: #FFA4A4;
     --setup-text: #3d2b1f;
     --setup-input-bg: #FCF9EA;
+  }
+
+  /* cards e seções sem fundo no light — só a borda de destaque */
+  [data-theme="light"] .book-card,
+  [data-theme="light"] .pages-card,
+  [data-theme="light"] .goal-card,
+  [data-theme="light"] .stat,
+  [data-theme="light"] .pages-breakdown-item,
+  [data-theme="light"] .year-chip,
+  [data-theme="light"] .quick-progress,
+  [data-theme="light"] .estimate-row {
+    background: transparent;
+    border-color: #BADFDB;
+  }
+
+  [data-theme="light"] .book-card:hover {
+    background: #f0faf9;
+    box-shadow: 0 2px 12px rgba(186,223,219,0.6);
+  }
+
+  [data-theme="light"] .progress-track,
+  [data-theme="light"] .goal-bar-track {
+    background: #BADFDB;
+  }
+
+  [data-theme="light"] .pages-tabs,
+  [data-theme="light"] .tabs {
+    border-bottom-color: #BADFDB;
+  }
+
+  [data-theme="light"] .modal {
+    background: #FCF9EA;
+    border-color: #BADFDB;
+  }
+
+  [data-theme="light"] .field input,
+  [data-theme="light"] .field select {
+    background: #FCF9EA;
+    border-color: #BADFDB;
+  }
+
+  [data-theme="light"] .field input:focus,
+  [data-theme="light"] .field select:focus {
+    border-color: #FFA4A4;
+  }
+
+  [data-theme="light"] header {
+    border-bottom-color: #9ecfcb;
+  }
+
+  [data-theme="light"] .year-chip.active-year {
+    background: #FFBDBD;
+    border-color: #FFA4A4;
+  }
+
+  [data-theme="light"] .goal-set input,
+  [data-theme="light"] .pages-add-input,
+  [data-theme="light"] .pages-add-book-select {
+    background: #FCF9EA;
+    border-color: #BADFDB;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
