@@ -633,13 +633,16 @@
 <div id="toast"></div>
 
 <script>
-  const API_KEY    = 'ebook_api_url';
-  const THEME_KEY  = 'minha_estante_theme';
+  const API_KEY   = 'ebook_api_url';
+  const GOALS_KEY = 'ebook_goals';
+  const THEME_KEY = 'minha_estante_theme';
 
   function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
-    document.getElementById('btn-theme').textContent = theme === 'dark' ? '☀️' : '🌙';
-    document.querySelector('meta[name="theme-color"]').setAttribute('content', theme === 'dark' ? '#16161e' : '#c4c5ca');
+    const btn = document.getElementById('btn-theme');
+    if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+    const mc = document.querySelector('meta[name="theme-color"]');
+    if (mc) mc.setAttribute('content', theme === 'dark' ? '#16161e' : '#c4c5ca');
     localStorage.setItem(THEME_KEY, theme);
   }
 
@@ -648,11 +651,9 @@
     applyTheme(current === 'dark' ? 'light' : 'dark');
   }
 
-  // Apply saved theme immediately
+  // Apply saved theme on load
   applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
 
-  const API_KEY   = 'ebook_api_url';
-  const GOALS_KEY = 'ebook_goals';
   let apiUrl   = localStorage.getItem(API_KEY) || '';
   let books    = [];
   let editingId  = null;
