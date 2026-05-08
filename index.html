@@ -623,7 +623,54 @@
   @keyframes spin { to { transform: rotate(360deg); } }
 
 
-  /* ── Estimativa ── */
+  /* ── Chart ── */
+  .chart-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.25rem 1.5rem;
+    box-shadow: var(--shadow-card); margin-bottom: 1rem;
+  }
+  .chart-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+  .chart-title {
+    font-family: 'Playfair Display', serif; font-size: 15px;
+    font-weight: 500; color: var(--text);
+  }
+  .chart-legend {
+    display: flex; gap: 12px; flex-wrap: wrap;
+  }
+  .chart-legend-item {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 11px; color: var(--text-dim);
+  }
+  .chart-legend-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .chart-wrap {
+    position: relative; width: 100%;
+  }
+  canvas#pages-chart {
+    width: 100%; display: block; cursor: pointer;
+  }
+  .chart-tooltip {
+    position: absolute; pointer-events: none;
+    background: var(--card2); border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm); padding: 8px 12px;
+    font-size: 12px; color: var(--text);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    opacity: 0; transition: opacity 0.15s;
+    white-space: nowrap; z-index: 10;
+  }
+  .chart-tooltip.visible { opacity: 1; }
+  .chart-tooltip strong { color: var(--accent); display: block; font-size: 15px; margin-bottom: 2px; }
+
+  [data-theme="light"] .chart-card {
+    background: transparent; border-color: #BADFDB;
+  }
+  [data-theme="light"] .chart-tooltip {
+    background: #FCF9EA; border-color: #BADFDB;
+  }
   .estimate-row {
     display: flex; align-items: center; gap: 8px;
     margin-top: 8px; padding: 10px 14px;
@@ -731,6 +778,19 @@
   <div class="app-section" id="section-paginas">
     <div class="pages-section">
       <span class="section-title">Páginas lidas</span>
+
+      <!-- Gráfico de resumo -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <span class="chart-title">Visão geral</span>
+          <div class="chart-legend" id="chart-legend"></div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="pages-chart" height="180"></canvas>
+          <div class="chart-tooltip" id="chart-tooltip"></div>
+        </div>
+      </div>
+
       <div class="pages-card">
         <div class="pages-tabs">
           <button class="pages-tab active" onclick="setPagesTab('hoje', this)">Hoje</button>
@@ -876,6 +936,8 @@
   function toggleTheme() {
     const current = document.documentElement.getAttribute('data-theme') || 'dark';
     applyTheme(current === 'dark' ? 'light' : 'dark');
+    // Redesenha o gráfico com as novas cores
+    requestAnimationFrame(drawChart);
   }
 
   // Apply saved theme on load
@@ -928,6 +990,10 @@
     renderPages();
   }
 
+  // Cache de totais para o gráfico
+  let pagesTotals = { hoje: 0, semana: 0, mes: 0, ano: 0 };
+  let chartAnimFrame = null;
+
   async function renderPages() {
     const subtitles = {
       hoje:   'lidas hoje',
@@ -945,6 +1011,11 @@
       const total   = entries.reduce((s, e) => s + (parseInt(e.pages) || 0), 0);
       document.getElementById('pages-number').textContent = total.toLocaleString('pt-BR');
 
+      // armazena total do período atual
+      if (['hoje','semana','mes','ano'].includes(currentPagesTab)) {
+        pagesTotals[currentPagesTab] = total;
+      }
+
       const byBook = {};
       entries.forEach(e => {
         const key = e.bookTitle || '(sem livro)';
@@ -960,7 +1031,191 @@
     } catch(e) {
       document.getElementById('pages-number').textContent = '—';
     }
+
+    // Carrega todos os períodos para o gráfico (só se ainda não carregados)
+    await loadAllPeriodsForChart();
   }
+
+  async function loadAllPeriodsForChart() {
+    const periods = ['hoje', 'semana', 'mes', 'ano'];
+    const missing = periods.filter(p => pagesTotals[p] === 0 && p !== currentPagesTab);
+    try {
+      await Promise.all(missing.map(async p => {
+        const d = await api({ action: 'getPages', period: p });
+        pagesTotals[p] = (d.entries || []).reduce((s, e) => s + (parseInt(e.pages) || 0), 0);
+      }));
+    } catch(_) {}
+    drawChart();
+  }
+
+  function drawChart() {
+    const canvas = document.getElementById('pages-chart');
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    const W = canvas.offsetWidth;
+    const H = 180;
+    canvas.width  = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width  = W + 'px';
+    canvas.style.height = H + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+    const colorText    = isDark ? '#c0caf5' : '#3d2b1f';
+    const colorDim     = isDark ? '#565f89' : '#9ecfcb';
+    const colorGrid    = isDark ? '#292e42' : '#BADFDB';
+    const barColors = [
+      { base: '#f7768e', light: '#2d1f26' },  // hoje
+      { base: '#7aa2f7', light: '#1a2b3c' },  // semana
+      { base: '#9ece6a', light: '#1a2b1a' },  // mês
+      { base: '#e0af68', light: '#2a2018' },  // ano
+    ];
+
+    const labels = ['Hoje', 'Semana', 'Mês', 'Ano'];
+    const values = [pagesTotals.hoje, pagesTotals.semana, pagesTotals.mes, pagesTotals.ano];
+    const maxVal = Math.max(...values, 1);
+
+    const padL = 44, padR = 12, padT = 12, padB = 36;
+    const chartW = W - padL - padR;
+    const chartH = H - padT - padB;
+    const barCount = 4;
+    const barGap = 14;
+    const barW = (chartW - barGap * (barCount - 1)) / barCount;
+
+    // Grid lines
+    const gridLines = 4;
+    ctx.strokeStyle = colorGrid;
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= gridLines; i++) {
+      const y = padT + chartH - (i / gridLines) * chartH;
+      ctx.beginPath();
+      ctx.moveTo(padL, y);
+      ctx.lineTo(padL + chartW, y);
+      ctx.stroke();
+      // grid labels
+      const val = Math.round((i / gridLines) * maxVal);
+      ctx.fillStyle = colorDim;
+      ctx.font = `10px 'DM Sans', sans-serif`;
+      ctx.textAlign = 'right';
+      ctx.fillText(val > 999 ? (val/1000).toFixed(1)+'k' : val, padL - 5, y + 3.5);
+    }
+
+    // Animate bars
+    if (chartAnimFrame) cancelAnimationFrame(chartAnimFrame);
+    let progress = 0;
+    const duration = 40; // frames
+    function animate() {
+      progress = Math.min(progress + 1, duration);
+      const ease = 1 - Math.pow(1 - progress / duration, 3); // ease-out cubic
+
+      ctx.clearRect(padL, padT, chartW, chartH + 1);
+
+      // redraw grid (clearing wiped it)
+      ctx.strokeStyle = colorGrid;
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= gridLines; i++) {
+        const y = padT + chartH - (i / gridLines) * chartH;
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + chartW, y); ctx.stroke();
+        ctx.fillStyle = colorDim;
+        ctx.font = `10px 'DM Sans', sans-serif`;
+        ctx.textAlign = 'right';
+        const val = Math.round((i / gridLines) * maxVal);
+        ctx.fillText(val > 999 ? (val/1000).toFixed(1)+'k' : val, padL - 5, y + 3.5);
+      }
+
+      values.forEach((val, i) => {
+        const x = padL + i * (barW + barGap);
+        const barH = val > 0 ? Math.max(4, (val / maxVal) * chartH * ease) : 0;
+        const y = padT + chartH - barH;
+        const color = barColors[i];
+
+        // rounded top bar
+        ctx.beginPath();
+        const r = Math.min(6, barW / 2, barH);
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + barW - r, y);
+        ctx.quadraticCurveTo(x + barW, y, x + barW, y + r);
+        ctx.lineTo(x + barW, padT + chartH);
+        ctx.lineTo(x, padT + chartH);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+        ctx.fillStyle = color.base;
+        ctx.globalAlpha = 0.85;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+
+        // label below
+        ctx.fillStyle = colorText;
+        ctx.font = `500 11px 'DM Sans', sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(labels[i], x + barW / 2, H - padB + 16);
+
+        // value above bar (only when complete)
+        if (progress === duration && val > 0) {
+          ctx.fillStyle = colorDim;
+          ctx.font = `500 10px 'DM Sans', sans-serif`;
+          ctx.textAlign = 'center';
+          const display = val > 999 ? (val/1000).toFixed(1)+'k' : val;
+          ctx.fillText(display, x + barW / 2, y - 4);
+        }
+      });
+
+      if (progress < duration) chartAnimFrame = requestAnimationFrame(animate);
+    }
+    animate();
+
+    // Legend
+    const legendEl = document.getElementById('chart-legend');
+    if (legendEl) {
+      legendEl.innerHTML = labels.map((l, i) => `
+        <div class="chart-legend-item">
+          <div class="chart-legend-dot" style="background:${barColors[i].base}"></div>
+          ${l}
+        </div>`).join('');
+    }
+
+    // Tooltip on hover/touch
+    function getHoveredBar(mx) {
+      for (let i = 0; i < 4; i++) {
+        const x = padL + i * (barW + barGap);
+        if (mx >= x && mx <= x + barW) return i;
+      }
+      return -1;
+    }
+
+    const tooltipEl = document.getElementById('chart-tooltip');
+    const periodLabels = ['hoje', 'esta semana', 'este mês', `em ${new Date().getFullYear()}`];
+
+    function showTooltip(mx, my) {
+      const rect = canvas.getBoundingClientRect();
+      const relX = mx - rect.left;
+      const relY = my - rect.top;
+      const idx = getHoveredBar(relX);
+      if (idx < 0 || relY > H - padB + 8) { tooltipEl.classList.remove('visible'); return; }
+      const val = values[idx];
+      tooltipEl.innerHTML = `<strong>${val.toLocaleString('pt-BR')} págs</strong>${labels[idx]} — ${periodLabels[idx]}`;
+      const tipX = padL + idx * (barW + barGap) + barW / 2;
+      const barH = val > 0 ? Math.max(4, (val / maxVal) * chartH) : 0;
+      const tipY = padT + chartH - barH - 8;
+      tooltipEl.style.left = Math.min(tipX - 60, W - 170) + 'px';
+      tooltipEl.style.top  = Math.max(0, tipY - 50) + 'px';
+      tooltipEl.classList.add('visible');
+    }
+
+    canvas.onmousemove = e => showTooltip(e.clientX, e.clientY);
+    canvas.onmouseleave = () => tooltipEl.classList.remove('visible');
+    canvas.ontouchmove  = e => { e.preventDefault(); const t = e.touches[0]; showTooltip(t.clientX, t.clientY); };
+    canvas.ontouchend   = () => setTimeout(() => tooltipEl.classList.remove('visible'), 1500);
+  }
+
+  // Redesenha o gráfico ao redimensionar a janela
+  window.addEventListener('resize', () => {
+    if (document.getElementById('section-paginas').classList.contains('visible')) {
+      drawChart();
+    }
+  });
 
   /* ── Year / Goal logic ── */
   function changeYear(delta) {
