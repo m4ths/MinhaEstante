@@ -14,6 +14,56 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="MinhaEstante" />
 <link rel="apple-touch-icon" href="./icons/icon-192x192.png" />
+<!-- Firebase Auth -->
+<script type="module">
+  import { initializeApp }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+  // ─────────────────────────────────────────────────────────────────
+  //  🔧 SUBSTITUA pelos valores do seu projeto no Firebase Console
+  //     Configurações do projeto → Seus apps → Web → SDK setup
+  // ─────────────────────────────────────────────────────────────────
+  const firebaseConfig = {
+    apiKey:            "AIzaSyC9HodWwxk70EltsTXXeLaiOjHqnxBIlU8",
+    authDomain:        "minha-estante-e60c2.firebaseapp.com",
+    projectId:         "minha-estante-e60c2",
+    storageBucket:     "minha-estante-e60c2.firebasestorage.app",
+    messagingSenderId: "361736937828",
+    appId:             "1:361736937828:web:d2783eb4517a04204d9a71"
+  };
+
+  const app      = initializeApp(firebaseConfig);
+  const auth     = getAuth(app);
+  const provider = new GoogleAuthProvider();
+
+  // Expõe funções para o script principal
+  window._fbSignIn  = () => signInWithPopup(auth, provider);
+  window._fbSignOut = () => signOut(auth);
+
+  onAuthStateChanged(auth, user => {
+    const authScreen = document.getElementById('auth-screen');
+    const appWrapper = document.getElementById('app-wrapper');
+    if (user) {
+      authScreen.style.display = 'none';
+      appWrapper.style.display = 'block';
+      // Chip do usuário
+      const av = document.getElementById('user-avatar');
+      const nm = document.getElementById('user-name');
+      if (av) av.src = user.photoURL || '';
+      if (nm) nm.textContent = (user.displayName || 'Você').split(' ')[0];
+      document.getElementById('user-chip').style.display = 'flex';
+      // Inicia o app
+      if (typeof window._appInit === 'function') window._appInit();
+    } else {
+      authScreen.style.display = 'flex';
+      appWrapper.style.display = 'none';
+      document.getElementById('user-chip').style.display = 'none';
+    }
+  });
+</script>
+
 <style>
   /* ── Tokyo Night (dark) ── */
   :root, [data-theme="dark"] {
@@ -733,14 +783,103 @@
   /* Sections visibilidade via nav */
   .app-section { display: none; }
   .app-section.visible { display: block; }
+
+  /* ── Auth screen ── */
+  #auth-screen {
+    display: none;
+    position: fixed; inset: 0; z-index: 300;
+    background: var(--paper);
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 1.75rem; padding: 2rem; text-align: center;
+  }
+  .auth-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 34px; letter-spacing: .02em; color: var(--text);
+  }
+  .auth-logo span { color: #d63333; font-style: italic; }
+  .auth-tagline { font-size: 14px; color: var(--text-dim); margin-top: -1rem; }
+  .btn-google {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 28px; border-radius: var(--radius-pill);
+    border: 1px solid var(--border-light);
+    background: var(--card); color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500;
+    cursor: pointer; box-shadow: var(--shadow-card);
+    transition: all .2s;
+  }
+  .btn-google:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: var(--shadow); }
+  .btn-google svg { width: 20px; height: 20px; flex-shrink: 0; }
+  .auth-note { font-size: 12px; color: var(--text-dim); max-width: 280px; }
+
+  /* ── User chip no header ── */
+  .user-chip {
+    display: none; align-items: center; gap: 7px;
+    background: var(--cream); border: 1px solid var(--border-light);
+    border-radius: var(--radius-pill); padding: 3px 11px 3px 3px;
+    cursor: pointer; transition: border-color .2s;
+  }
+  .user-chip:hover { border-color: var(--accent); }
+  .user-avatar { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; }
+  .user-name { font-size: 12px; color: var(--text); font-weight: 500; max-width: 72px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* ── User menu (logout) ── */
+  .user-menu {
+    display: none; position: fixed;
+    top: calc(52px + env(safe-area-inset-top, 0px) + 6px);
+    right: 1.1rem; z-index: 200;
+    background: var(--card); border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm); box-shadow: var(--shadow);
+    padding: 6px; min-width: 155px;
+  }
+  .user-menu.open { display: block; }
+  .user-menu-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 13px; border-radius: 8px;
+    font-size: 13px; color: var(--text); cursor: pointer; transition: background .15s;
+  }
+  .user-menu-item:hover { background: var(--cream); }
+  .user-menu-item.danger { color: var(--accent); }
+
 </style>
 </head>
 <body>
 
+<!-- Tela de login -->
+<div id="auth-screen">
+  <div class="auth-logo">minha <span>estante</span></div>
+  <p class="auth-tagline">Sua biblioteca pessoal, em qualquer lugar.</p>
+  <button class="btn-google" onclick="(window._fbSignIn||function(){alert('Firebase não configurado ainda.')})().catch(e=>alert('Erro: '+e.message))">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+    </svg>
+    Entrar com Google
+  </button>
+  <p class="auth-note">Seus dados ficam associados à sua conta Google.</p>
+</div>
+
+<!-- App (visível só após login) -->
+<div id="app-wrapper" style="display:none">
+
 <header>
   <div class="logo">minha <span>estante</span></div>
-  <button class="btn-theme" id="btn-theme" onclick="toggleTheme()" title="Alternar tema">🌙</button>
+  <div style="display:flex;align-items:center;gap:8px">
+    <button class="btn-theme" id="btn-theme" onclick="toggleTheme()" title="Alternar tema">🌙</button>
+    <div class="user-chip" id="user-chip" onclick="document.getElementById('user-menu').classList.toggle('open')">
+      <img class="user-avatar" id="user-avatar" src="" alt="avatar" />
+      <span class="user-name" id="user-name"></span>
+    </div>
+  </div>
 </header>
+
+<!-- Menu logout -->
+<div class="user-menu" id="user-menu">
+  <div class="user-menu-item danger" onclick="if(confirm('Sair da conta?'))window._fbSignOut&&window._fbSignOut()">
+    🚪 Sair da conta
+  </div>
+</div>
 
 <!-- FAB -->
 <button class="fab" onclick="openModal()" title="Adicionar livro" aria-label="Adicionar livro">+</button>
@@ -964,12 +1103,12 @@
   // Apply saved theme on load
   applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
 
-  let apiUrl   = localStorage.getItem(API_KEY) || '';
+  let apiUrl   = ''; // populado em _appInit após login
   let books    = [];
   let editingId  = null;
   let currentTab = 'Lendo';
   let selectedYear = new Date().getFullYear();
-  let goals    = JSON.parse(localStorage.getItem(GOALS_KEY) || '{}');
+  let goals    = {}; // populado em _appInit após login
   let currentPagesTab = 'hoje';
   let avgPagesPerDay = 0; // calculado do histórico total
 
@@ -1534,15 +1673,7 @@
     renderGoal(); renderYearHistory();
   }
 
-  /* ── Init ── */
-  document.getElementById('selected-year').textContent = selectedYear;
-  if (apiUrl) {
-    document.getElementById('api-url-input').value = apiUrl;
-    document.getElementById('setup-banner').style.display = 'none';
-    loadBooks();
-  } else {
-    renderPages();
-  }
+  /* ── Init: chamado por window._appInit após login Firebase ── */
 
   function saveApiUrl() {
     const val = document.getElementById('api-url-input').value.trim();
@@ -1876,7 +2007,34 @@
   document.getElementById('modal-overlay').addEventListener('click', function(e) {
     if (e.target === this) closeModal();
   });
+
+  // Fecha menu de usuário ao clicar fora
+  document.addEventListener('click', function(e) {
+    const menu = document.getElementById('user-menu');
+    const chip = document.getElementById('user-chip');
+    if (menu && chip && !menu.contains(e.target) && !chip.contains(e.target)) {
+      menu.classList.remove('open');
+    }
+  });
+
+  // Chamado pelo Firebase quando o login é confirmado
+  window._appInit = function() {
+    applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
+    apiUrl = localStorage.getItem(API_KEY) || '';
+    goals  = JSON.parse(localStorage.getItem(GOALS_KEY) || '{}');
+    document.getElementById('selected-year').textContent = selectedYear;
+    if (apiUrl) {
+      document.getElementById('api-url-input').value = apiUrl;
+      document.getElementById('setup-banner').style.display = 'none';
+      loadBooks();
+    } else {
+      document.getElementById('setup-banner').style.display = '';
+      renderPages();
+    }
+  };
 </script>
+</div><!-- /app-wrapper -->
+
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
