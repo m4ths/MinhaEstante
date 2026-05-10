@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<title>Importar → Firestore</title>
+<style>
+  body { font-family: sans-serif; background: #1a1b26; color: #c0caf5; max-width: 560px; margin: 60px auto; padding: 1rem; }
+  h2 { color: #7aa2f7; }
+  .card { background: #1f2335; border: 1px solid #292e42; border-radius: 12px; padding: 1.5rem; margin-top: 1rem; }
+  button { background: #7aa2f7; color: #1a1b26; border: none; border-radius: 8px; padding: 12px 28px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 1rem; }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  .log { margin-top: 1rem; font-size: 13px; line-height: 1.7; max-height: 320px; overflow-y: auto; }
+  .ok  { color: #9ece6a; }
+  .err { color: #f7768e; }
+  .info{ color: #e0af68; }
+  #status { font-size: 14px; margin-top: .5rem; color: #e0af68; }
+</style>
+</head>
+<body>
+<h2>📚 Importar Minha Estante → Firestore</h2>
+
+<div class="card">
+  <p>Esta página importa seus livros e histórico de páginas para o Firestore, associados à sua conta Google.</p>
+  <p><strong>Abra esta página no mesmo navegador onde você já está logado no app.</strong></p>
+  <div id="status">Aguardando login…</div>
+  <button id="btn" disabled onclick="importar()">Importar dados</button>
+  <div class="log" id="log"></div>
+</div>
+
+<script type="module">
+import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged }
+                           from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, serverTimestamp }
+                           from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyC9HodWwxk70EltsTXXeLaiOjHqnxBIlU8",
+  authDomain:        "minha-estante-e60c2.firebaseapp.com",
+  projectId:         "minha-estante-e60c2",
+  storageBucket:     "minha-estante-e60c2.firebasestorage.app",
+  messagingSenderId: "361736937828",
+  appId:             "1:361736937828:web:d2783eb4517a04204d9a71"
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+// ── Dados exportados do Google Sheets ──
+const DADOS = {
+  "livros": [
+    { "Título": "Roverando", "Autor": "J.R. Tolkien", "Edição": "1a ilustrada", "Páginas": 300, "Progresso(%)": 100, "Status": "Concluído", "Início": "", "Fim": "", "Tipo": "Ebook" },
+    { "Título": "Incêndio oculto", "Autor": "Gi almeida", "Edição": "1 edição", "Páginas": 348, "Progresso(%)": 100, "Status": "Concluído", "Início": "", "Fim": "2025-09-08", "Tipo": "Ebook" },
+    { "Título": "Vilão Iniciante", "Autor": "John Scalzi", "Edição": "1 ediçao", "Páginas": 288, "Progresso(%)": 100, "Status": "Concluído", "Início": "2025-09-10", "Fim": "2025-09-22", "Tipo": "Ebook" },
+    { "Título": "cafés e lendas", "Autor": "Travis Baldreen", "Edição": "", "Páginas": 336, "Progresso(%)": 100, "Status": "Concluído", "Início": "", "Fim": "", "Tipo": "Ebook" },
+    { "Título": "Matilda", "Autor": "Roald Dahl", "Edição": "10 edição", "Páginas": 217, "Progresso(%)": 100, "Status": "Concluído", "Início": "", "Fim": "", "Tipo": "Ebook" },
+    { "Título": "Warbreaker", "Autor": "Brandon Sanderson", "Edição": "", "Páginas": 692, "Progresso(%)": 100, "Status": "Concluído", "Início": "", "Fim": "", "Tipo": "Ebook" },
+    { "Título": "BGA", "Autor": "Roald Dahl", "Edição": "", "Páginas": 348, "Progresso(%)": 100, "Status": "Concluído", "Início": "", "Fim": "", "Tipo": "Ebook" },
+    { "Título": "fantástico Sr Raposo", "Autor": "Roald Dahl", "Edição": "", "Páginas": "", "Progresso(%)": 100, "Status": "Concluído", "Início": "", "Fim": "", "Tipo": "Ebook" },
+    { "Título": "elantris", "Autor": "Brandon Sanderson", "Edição": "", "Páginas": 576, "Progresso(%)": 100, "Status": "Concluído", "Início": "", "Fim": "2026-01-01", "Tipo": "Ebook" },
+    { "Título": "Tress: Mar esmeralda", "Autor": "Brandon Sanderson", "Edição": "", "Páginas": "", "Progresso(%)": 100, "Status": "Concluído", "Início": "", "Fim": "2026-01-31", "Tipo": "Ebook" },
+    { "Título": "o pêssego gigante", "Autor": "Roald Dahl", "Edição": "", "Páginas": "", "Progresso(%)": 100, "Status": "Concluído", "Início": "", "Fim": "2026-01-29", "Tipo": "Ebook" },
+    { "Título": "a alma do imperador", "Autor": "", "Edição": "", "Páginas": "", "Progresso(%)": 100, "Status": "Concluído", "Início": "2026-02-01", "Fim": "2026-02-07", "Tipo": "Ebook" },
+    { "Título": "O caminho dos reis stormlight", "Autor": "", "Edição": "", "Páginas": "", "Progresso(%)": 100, "Status": "Concluído", "Início": "2026-02-07", "Fim": "2026-04-21", "Tipo": "Ebook" },
+    { "Título": "A fantástica fábrica de chocolate", "Autor": "Roald Dahl", "Edição": "", "Páginas": 159, "Progresso(%)": 100, "Status": "Concluído", "Início": "", "Fim": "2026-02-16", "Tipo": "Ebook" },
+    { "Título": "o hobbit", "Autor": "", "Edição": "", "Páginas": "", "Progresso(%)": 100, "Status": "Concluído", "Início": "", "Fim": "2026-04-22", "Tipo": "Ebook" },
+    { "Título": "palavras de radiancia", "Autor": "", "Edição": "", "Páginas": 1328, "Progresso(%)": 24, "Status": "Lendo", "Início": "", "Fim": "", "Tipo": "Ebook" }
+  ],
+  "paginasLog": [
+    { "date": "2026-05-01", "bookTitle": "palavras de radiancia", "pages": 13 },
+    { "date": "2026-05-01", "bookTitle": "palavras de radiancia", "pages": 13 },
+    { "date": "2026-05-01", "bookTitle": "palavras de radiancia", "pages": 13 },
+    { "date": "2026-05-05", "bookTitle": "palavras de radiancia", "pages": 13 },
+    { "date": "2026-05-06", "bookTitle": "palavras de radiancia", "pages": 27 },
+    { "date": "2026-05-08", "bookTitle": "palavras de radiancia", "pages": 27 },
+    { "date": "2026-05-10", "bookTitle": "palavras de radiancia", "pages": 40 }
+  ]
+};
+
+function log(msg, tipo = 'ok') {
+  const el = document.getElementById('log');
+  el.innerHTML += `<div class="${tipo}">${msg}</div>`;
+  el.scrollTop = el.scrollHeight;
+}
+
+let currentUser = null;
+
+onAuthStateChanged(auth, user => {
+  if (user) {
+    currentUser = user;
+    document.getElementById('status').textContent = `✅ Logado como ${user.displayName} (${user.email})`;
+    document.getElementById('btn').disabled = false;
+  } else {
+    document.getElementById('status').innerHTML = `Não logado. <a href="#" onclick="login()" style="color:#7aa2f7">Clique para logar</a>`;
+  }
+});
+
+window.login = async () => {
+  const provider = new GoogleAuthProvider();
+  await signInWithPopup(auth, provider);
+};
+
+window.importar = async () => {
+  const btn = document.getElementById('btn');
+  btn.disabled = true;
+  btn.textContent = 'Importando…';
+
+  const uid = currentUser.uid;
+  log(`👤 UID: ${uid}`, 'info');
+
+  // ── Importa Livros ──
+  log('📚 Importando livros…', 'info');
+  const livrosRef = collection(db, 'users', uid, 'livros');
+  let livrosOk = 0;
+  for (const livro of DADOS.livros) {
+    try {
+      await addDoc(livrosRef, {
+        titulo:    (livro['Título']       || '').trim(),
+        autor:     (livro['Autor']        || '').trim(),
+        edicao:    (livro['Edição']       || '').trim(),
+        paginas:   String(livro['Páginas'] || ''),
+        progresso: Number(livro['Progresso(%)'] || 0),
+        status:    livro['Status']  || 'Lendo',
+        inicio:    livro['Início']  || '',
+        fim:       livro['Fim']     || '',
+        tipo:      livro['Tipo']    || 'Ebook',
+        criadoEm:  serverTimestamp()
+      });
+      log(`  ✅ ${livro['Título']}`);
+      livrosOk++;
+    } catch(e) {
+      log(`  ❌ ${livro['Título']}: ${e.message}`, 'err');
+    }
+  }
+
+  // ── Importa PaginasLog ──
+  log('📖 Importando histórico de páginas…', 'info');
+  const logRef = collection(db, 'users', uid, 'paginasLog');
+  let logOk = 0;
+  for (const entry of DADOS.paginasLog) {
+    try {
+      await addDoc(logRef, {
+        date:      entry.date,
+        bookTitle: entry.bookTitle,
+        pages:     Number(entry.pages),
+        criadoEm:  serverTimestamp()
+      });
+      log(`  ✅ ${entry.date} — ${entry.bookTitle} — ${entry.pages} pgs`);
+      logOk++;
+    } catch(e) {
+      log(`  ❌ ${e.message}`, 'err');
+    }
+  }
+
+  log(``, 'info');
+  log(`🎉 Concluído! ${livrosOk} livros e ${logOk} entradas de log importados.`, 'info');
+  btn.textContent = '✅ Importação concluída!';
+};
+</script>
+</body>
+</html>
