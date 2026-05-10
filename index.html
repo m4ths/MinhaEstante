@@ -34,12 +34,16 @@
     --blue-tn: #7aa2f7;
     --blue-tn-light: #1a2b3c;
     --header-bg: #16161e;
-    --shadow: 0 1px 3px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.3);
-    --radius: 4px;
+    --shadow: 0 2px 8px rgba(0,0,0,0.35), 0 8px 24px rgba(0,0,0,0.25);
+    --shadow-card: 0 1px 3px rgba(0,0,0,0.3), 0 4px 20px rgba(0,0,0,0.2);
+    --radius: 16px;
+    --radius-sm: 10px;
+    --radius-pill: 50px;
     --setup-bg: #24283b;
     --setup-border: #414868;
     --setup-text: #a9b1d6;
     --setup-input-bg: #1a1b26;
+    --nav-height: 68px;
   }
 
   /* ── Paleta Personalizada (light) ── */
@@ -61,12 +65,16 @@
     --blue-tn: #5b8fd4;
     --blue-tn-light: #ddeefa;
     --header-bg: #BADFDB;
-    --shadow: 0 1px 4px rgba(186,223,219,0.5);
-    --radius: 4px;
+    --shadow: 0 2px 8px rgba(186,223,219,0.4), 0 4px 20px rgba(186,223,219,0.2);
+    --shadow-card: 0 1px 4px rgba(186,223,219,0.5), 0 4px 16px rgba(186,223,219,0.3);
+    --radius: 16px;
+    --radius-sm: 10px;
+    --radius-pill: 50px;
     --setup-bg: #FFBDBD;
     --setup-border: #FFA4A4;
     --setup-text: #3d2b1f;
     --setup-input-bg: #FCF9EA;
+    --nav-height: 68px;
   }
 
   /* cards e seções sem fundo no light — só a borda de destaque */
@@ -84,7 +92,7 @@
 
   [data-theme="light"] .book-card:hover {
     background: #f0faf9;
-    box-shadow: 0 2px 12px rgba(186,223,219,0.6);
+    box-shadow: 0 4px 20px rgba(186,223,219,0.5);
   }
 
   [data-theme="light"] .progress-track,
@@ -129,6 +137,23 @@
     border-color: #BADFDB;
   }
 
+  [data-theme="light"] .search-bar {
+    background: rgba(186,223,219,0.25);
+    border-color: #BADFDB;
+  }
+  [data-theme="light"] .search-bar:focus-within {
+    border-color: #FFA4A4;
+    background: #FCF9EA;
+  }
+  [data-theme="light"] .search-bar input { color: #3d2b1f; }
+  [data-theme="light"] .search-bar input::placeholder { color: #9ecfcb; }
+
+  [data-theme="light"] .bottom-nav {
+    background: rgba(252,249,234,0.92);
+    border-top-color: #BADFDB;
+  }
+  [data-theme="light"] .fab { box-shadow: 0 4px 20px rgba(255,164,164,0.5); }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
@@ -137,61 +162,113 @@
     color: var(--text);
     min-height: 100vh;
     font-size: 15px;
+    padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
+    -webkit-tap-highlight-color: transparent;
   }
 
   header {
     background: var(--header-bg);
     color: var(--text);
-    padding: 0 2rem;
+    padding: 0 1.25rem;
+    padding-top: env(safe-area-inset-top, 0px);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 56px;
+    height: calc(56px + env(safe-area-inset-top, 0px));
     position: sticky;
     top: 0;
     z-index: 50;
     border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
   .logo { font-family: 'Playfair Display', serif; font-size: 20px; letter-spacing: 0.02em; color: var(--text); }
   .logo span { color: #d63333; font-style: italic; }
   .btn-theme {
-    background: transparent; border: 1px solid var(--border-light);
-    border-radius: var(--radius); width: 34px; height: 34px;
+    background: var(--cream); border: 1px solid var(--border-light);
+    border-radius: var(--radius-pill); width: 36px; height: 36px;
     font-size: 16px; cursor: pointer; display: flex;
-    align-items: center; justify-content: center; transition: all 0.15s;
+    align-items: center; justify-content: center; transition: all 0.2s;
   }
-  .btn-theme:hover { background: var(--cream); }
+  .btn-theme:hover { background: var(--border); }
 
-  header .btn-add {
-    background: var(--accent); color: #fff; border: none;
-    padding: 7px 18px; border-radius: var(--radius);
-    font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
-    cursor: pointer; transition: opacity 0.15s;
+  /* FAB — substituiu o botão do header */
+  .fab {
+    position: fixed;
+    bottom: calc(var(--nav-height) + 16px + env(safe-area-inset-bottom, 0px));
+    right: 1.25rem;
+    z-index: 100;
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none;
+    color: #fff;
+    font-size: 26px;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(247,118,142,0.45);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.18s, box-shadow 0.18s;
+    -webkit-tap-highlight-color: transparent;
   }
-  header .btn-add:hover { opacity: 0.85; }
+  .fab:active { transform: scale(0.92); box-shadow: 0 2px 10px rgba(247,118,142,0.3); }
+
+  /* Bottom Nav */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 90;
+    height: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: rgba(22,22,30,0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    padding-top: 10px;
+  }
+  .nav-btn {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    background: transparent; border: none; cursor: pointer;
+    color: var(--text-dim);
+    font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 500;
+    letter-spacing: 0.02em;
+    transition: color 0.15s;
+    padding: 0 4px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .nav-btn .nav-icon {
+    font-size: 20px; line-height: 1;
+    transition: transform 0.2s;
+  }
+  .nav-btn.active { color: var(--accent); }
+  .nav-btn.active .nav-icon { transform: scale(1.12); }
+  .nav-btn:not(.active):active .nav-icon { transform: scale(0.9); }
 
   #setup-banner {
     background: var(--setup-bg);
     border-bottom: 1px solid var(--setup-border);
-    padding: 1rem 2rem;
+    padding: 1rem 1.25rem;
     display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
   }
   #setup-banner p { font-size: 13px; color: var(--setup-text); flex-shrink: 0; }
   #setup-banner input {
-    flex: 1; min-width: 220px; padding: 7px 10px;
-    border: 1px solid var(--setup-border); border-radius: var(--radius);
+    flex: 1; min-width: 220px; padding: 8px 14px;
+    border: 1px solid var(--setup-border); border-radius: var(--radius-pill);
     font-family: 'DM Sans', sans-serif; font-size: 13px;
     background: var(--setup-input-bg); color: var(--setup-text);
   }
   #setup-banner .btn-sm {
-    padding: 7px 14px; border-radius: var(--radius);
+    padding: 8px 18px; border-radius: var(--radius-pill);
     border: 1px solid var(--setup-border); background: transparent;
     color: var(--setup-text); font-size: 13px; font-family: 'DM Sans', sans-serif;
     cursor: pointer; white-space: nowrap; transition: all 0.15s;
   }
   #setup-banner .btn-sm:hover { background: var(--setup-border); color: var(--text); }
 
-  main { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem; }
+  main { max-width: 860px; margin: 0 auto; padding: 1.5rem 1.25rem; }
 
   /* ── Pages Section ── */
   .pages-section { margin-bottom: 2rem; }
@@ -203,6 +280,7 @@
   .pages-card {
     background: var(--card); border: 1px solid var(--border);
     border-radius: var(--radius); overflow: hidden;
+    box-shadow: var(--shadow-card);
   }
   .pages-tabs {
     display: flex; border-bottom: 1px solid var(--border);
@@ -234,7 +312,7 @@
   }
   .pages-breakdown-item {
     background: var(--cream); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 10px 12px; text-align: center;
+    border-radius: var(--radius-sm); padding: 10px 12px; text-align: center;
   }
   .pages-breakdown-num {
     font-family: 'Playfair Display', serif; font-size: 22px;
@@ -262,8 +340,8 @@
   }
   .year-selector { display: flex; align-items: center; gap: 6px; }
   .year-selector button {
-    width: 26px; height: 26px; border: 1px solid var(--border);
-    border-radius: var(--radius); background: transparent; cursor: pointer;
+    width: 30px; height: 30px; border: 1px solid var(--border);
+    border-radius: 50%; background: transparent; cursor: pointer;
     font-size: 14px; color: var(--text-dim);
     display: flex; align-items: center; justify-content: center; transition: all 0.15s;
   }
@@ -275,6 +353,7 @@
   .goal-card {
     background: var(--card); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 1.25rem 1.5rem;
+    box-shadow: var(--shadow-card);
   }
   .goal-top {
     display: flex; align-items: flex-start; justify-content: space-between;
@@ -293,13 +372,13 @@
   .goal-label { font-size: 12px; color: var(--text-dim); letter-spacing: 0.04em; text-transform: uppercase; margin-top: 4px; }
   .goal-set { display: flex; align-items: center; gap: 6px; }
   .goal-set input {
-    width: 64px; padding: 6px 8px; border: 1px solid var(--border);
-    border-radius: var(--radius); font-family: 'DM Sans', sans-serif;
+    width: 64px; padding: 8px 10px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif;
     font-size: 14px; text-align: center; background: var(--cream); color: var(--text);
   }
   .goal-set input:focus { outline: none; border-color: var(--accent); }
   .goal-set button {
-    padding: 6px 12px; border: 1px solid var(--accent); border-radius: var(--radius);
+    padding: 8px 14px; border: 1px solid var(--accent); border-radius: var(--radius-pill);
     background: transparent; color: var(--accent); font-size: 12px;
     font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.15s; white-space: nowrap;
   }
@@ -320,7 +399,7 @@
   }
   .year-chip {
     background: var(--cream); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 8px 10px;
+    border-radius: var(--radius-sm); padding: 8px 10px;
     text-align: center; cursor: pointer; transition: all 0.15s;
   }
   .year-chip:hover { border-color: var(--accent); }
@@ -331,11 +410,12 @@
   /* ── Stats ── */
   .stats {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 12px; margin-bottom: 2rem;
+    gap: 10px; margin-bottom: 1.5rem;
   }
   .stat {
     background: var(--card); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 1rem 1.25rem; text-align: center;
+    box-shadow: var(--shadow-card);
   }
   .stat-num {
     font-family: 'Playfair Display', serif; font-size: 32px;
@@ -343,14 +423,42 @@
   }
   .stat-label { font-size: 12px; color: var(--text-dim); margin-top: 4px; letter-spacing: 0.04em; text-transform: uppercase; }
 
+  /* ── Search Bar ── */
+  .search-wrap { margin-bottom: 1rem; }
+  .search-bar {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--cream); border: 1px solid var(--border);
+    border-radius: var(--radius-pill); padding: 0 16px; height: 44px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .search-bar:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light);
+  }
+  .search-icon { font-size: 15px; color: var(--text-dim); flex-shrink: 0; }
+  .search-bar input {
+    flex: 1; background: transparent; border: none; outline: none;
+    font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--text);
+  }
+  .search-bar input::placeholder { color: var(--text-dim); }
+  .search-clear {
+    background: transparent; border: none; color: var(--text-dim);
+    cursor: pointer; font-size: 16px; padding: 0; line-height: 1;
+    display: none; flex-shrink: 0;
+  }
+  .search-clear.visible { display: block; }
+
   /* ── Tabs ── */
   .tabs {
-    display: flex; gap: 0; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border);
+    display: flex; gap: 0; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border);
+    overflow-x: auto; scrollbar-width: none;
   }
+  .tabs::-webkit-scrollbar { display: none; }
   .tab-btn {
-    padding: 8px 20px; font-family: 'DM Sans', sans-serif; font-size: 14px;
+    padding: 8px 18px; font-family: 'DM Sans', sans-serif; font-size: 14px;
     background: transparent; border: none; color: var(--text-dim); cursor: pointer;
     border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s;
+    white-space: nowrap; flex-shrink: 0;
   }
   .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
   .tab-btn:hover:not(.active) { color: var(--text); }
@@ -360,9 +468,11 @@
   .book-card {
     background: var(--card); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 1.1rem 1.25rem;
-    transition: box-shadow 0.15s, border-color 0.15s; position: relative;
+    box-shadow: var(--shadow-card);
+    transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s;
   }
-  .book-card:hover { box-shadow: var(--shadow); border-color: var(--border-light); }
+  .book-card:hover { box-shadow: var(--shadow); border-color: var(--border-light); transform: translateY(-1px); }
+  .book-card:active { transform: translateY(0); }
   .book-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
   .book-info { flex: 1; min-width: 0; }
   .book-title {
@@ -383,8 +493,8 @@
   .badge-ebook  { background: var(--green-light); color: var(--green); font-size: 9px; }
   .book-actions { display: flex; gap: 6px; flex-shrink: 0; }
   .btn-icon {
-    width: 30px; height: 30px; border: 1px solid var(--border); background: transparent;
-    border-radius: var(--radius); cursor: pointer; font-size: 13px; color: var(--text-dim);
+    width: 32px; height: 32px; border: 1px solid var(--border); background: transparent;
+    border-radius: 50%; cursor: pointer; font-size: 13px; color: var(--text-dim);
     display: flex; align-items: center; justify-content: center; transition: all 0.15s;
   }
   .btn-icon:hover { background: var(--cream); color: var(--text); }
@@ -393,17 +503,17 @@
   /* ── Progress ── */
   .progress-wrap { margin-top: 8px; }
   .progress-track {
-    height: 6px; background: var(--cream); border-radius: 3px;
+    height: 7px; background: var(--cream); border-radius: 4px;
     overflow: hidden; margin-bottom: 6px;
   }
-  .progress-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+  .progress-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
   .progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-dim); margin-bottom: 8px; }
 
   /* MOBILE FIX: quick-progress */
   .quick-progress {
     display: flex; align-items: center; gap: 10px;
     background: var(--cream); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 8px 12px; margin-top: 8px;
+    border-radius: var(--radius-sm); padding: 10px 14px; margin-top: 8px;
     flex-wrap: wrap;
   }
   .quick-progress label {
@@ -418,7 +528,7 @@
     min-width: 36px; text-align: right; flex-shrink: 0;
   }
   .quick-progress .btn-save-pct {
-    padding: 5px 12px; border: 1px solid var(--accent); border-radius: var(--radius);
+    padding: 6px 14px; border: 1px solid var(--accent); border-radius: var(--radius-pill);
     background: transparent; color: var(--accent); font-size: 12px;
     font-family: 'DM Sans', sans-serif; cursor: pointer; flex-shrink: 0;
     transition: all 0.15s; white-space: nowrap;
@@ -431,24 +541,45 @@
   .empty p { font-size: 14px; }
 
   #toast {
-    position: fixed; bottom: 2rem; left: 50%;
+    position: fixed;
+    bottom: calc(var(--nav-height) + 20px + env(safe-area-inset-bottom, 0px));
+    left: 50%;
     transform: translateX(-50%) translateY(20px);
-    background: #000; color: var(--text); border: 1px solid var(--border-light);
-    padding: 10px 20px; border-radius: 20px; font-size: 13px;
+    background: var(--card); color: var(--text); border: 1px solid var(--border-light);
+    padding: 12px 24px; border-radius: var(--radius-pill); font-size: 13px;
     opacity: 0; transition: all 0.25s; z-index: 999; pointer-events: none; white-space: nowrap;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
   }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   #toast.err { background: #2a0a0a; border-color: #5a1818; color: #e05050; }
 
   .modal-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,0.75);
-    display: none; align-items: center; justify-content: center; z-index: 200; padding: 1rem;
+    display: none; align-items: flex-end; justify-content: center; z-index: 200;
   }
   .modal-overlay.open { display: flex; }
   .modal {
     background: var(--card); border: 1px solid var(--border-light);
-    border-radius: 6px; padding: 1.75rem; width: 100%; max-width: 500px;
-    max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+    border-radius: var(--radius) var(--radius) 0 0;
+    padding: 1.5rem 1.5rem;
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+    width: 100%; max-width: 560px;
+    max-height: 92vh; overflow-y: auto;
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.5);
+    animation: slideUp 0.28s cubic-bezier(0.34,1.06,0.64,1);
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  /* drag handle */
+  .modal::before {
+    content: '';
+    display: block;
+    width: 40px; height: 4px;
+    border-radius: 2px;
+    background: var(--border-light);
+    margin: 0 auto 1.25rem;
   }
   .modal h2 {
     font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 500;
@@ -459,7 +590,7 @@
   .field { display: flex; flex-direction: column; gap: 5px; }
   .field label { font-size: 12px; font-weight: 500; color: var(--text-dim); letter-spacing: 0.04em; text-transform: uppercase; }
   .field input, .field select {
-    padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm);
     font-family: 'DM Sans', sans-serif; font-size: 14px;
     background: var(--cream); color: var(--text); transition: border-color 0.15s;
   }
@@ -470,13 +601,13 @@
     margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--border);
   }
   .btn-cancel {
-    padding: 8px 18px; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 10px 20px; border: 1px solid var(--border); border-radius: var(--radius-pill);
     background: transparent; font-family: 'DM Sans', sans-serif;
     font-size: 14px; cursor: pointer; color: var(--text-dim);
   }
   .btn-cancel:hover { background: var(--cream); color: var(--text); }
   .btn-save {
-    padding: 8px 20px; border: none; border-radius: var(--radius);
+    padding: 10px 24px; border: none; border-radius: var(--radius-pill);
     background: var(--accent); color: #fff; font-family: 'DM Sans', sans-serif;
     font-size: 14px; font-weight: 500; cursor: pointer; transition: opacity 0.15s;
   }
@@ -492,12 +623,59 @@
   @keyframes spin { to { transform: rotate(360deg); } }
 
 
-  /* ── Estimativa ── */
+  /* ── Chart ── */
+  .chart-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.25rem 1.5rem;
+    box-shadow: var(--shadow-card); margin-bottom: 1rem;
+  }
+  .chart-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+  .chart-title {
+    font-family: 'Playfair Display', serif; font-size: 15px;
+    font-weight: 500; color: var(--text);
+  }
+  .chart-legend {
+    display: flex; gap: 12px; flex-wrap: wrap;
+  }
+  .chart-legend-item {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 11px; color: var(--text-dim);
+  }
+  .chart-legend-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .chart-wrap {
+    position: relative; width: 100%;
+  }
+  canvas#pages-chart {
+    width: 100%; display: block; cursor: pointer;
+  }
+  .chart-tooltip {
+    position: absolute; pointer-events: none;
+    background: var(--card2); border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm); padding: 8px 12px;
+    font-size: 12px; color: var(--text);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    opacity: 0; transition: opacity 0.15s;
+    white-space: nowrap; z-index: 10;
+  }
+  .chart-tooltip.visible { opacity: 1; }
+  .chart-tooltip strong { color: var(--accent); display: block; font-size: 15px; margin-bottom: 2px; }
+
+  [data-theme="light"] .chart-card {
+    background: transparent; border-color: #BADFDB;
+  }
+  [data-theme="light"] .chart-tooltip {
+    background: #FCF9EA; border-color: #BADFDB;
+  }
   .estimate-row {
     display: flex; align-items: center; gap: 8px;
-    margin-top: 8px; padding: 8px 12px;
+    margin-top: 8px; padding: 10px 14px;
     background: var(--cream); border: 1px solid var(--border);
-    border-radius: var(--radius); font-size: 12px; color: var(--text-dim);
+    border-radius: var(--radius-sm); font-size: 12px; color: var(--text-dim);
   }
   .estimate-icon { font-size: 14px; flex-shrink: 0; }
   .estimate-text { flex: 1; }
@@ -511,7 +689,7 @@
 
   @media (max-width: 520px) {
     header { padding: 0 1rem; }
-    main { padding: 1.5rem 1rem; }
+    main { padding: 1.25rem 1rem; }
     .form-grid { grid-template-columns: 1fr; }
     .form-grid .full { grid-column: 1; }
     .book-title { white-space: normal; }
@@ -531,20 +709,40 @@
     .quick-progress .pct-badge { grid-column: 3; grid-row: 1; }
     .quick-progress .btn-save-pct {
       grid-column: 1 / -1; grid-row: 2;
-      width: 100%; text-align: center; padding: 8px;
+      width: 100%; text-align: center; padding: 10px;
     }
   }
+
+  /* Sections visibilidade via nav */
+  .app-section { display: none; }
+  .app-section.visible { display: block; }
 </style>
 </head>
 <body>
 
 <header>
   <div class="logo">minha <span>estante</span></div>
-  <div style="display:flex;align-items:center;gap:10px;">
-    <button class="btn-theme" id="btn-theme" onclick="toggleTheme()" title="Alternar tema">🌙</button>
-    <button class="btn-add" onclick="openModal()">+ Adicionar livro</button>
-  </div>
+  <button class="btn-theme" id="btn-theme" onclick="toggleTheme()" title="Alternar tema">🌙</button>
 </header>
+
+<!-- FAB -->
+<button class="fab" onclick="openModal()" title="Adicionar livro" aria-label="Adicionar livro">+</button>
+
+<!-- Bottom Navigation -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="nav-livros" onclick="showSection('livros', this)">
+    <span class="nav-icon">📚</span>
+    <span>Livros</span>
+  </button>
+  <button class="nav-btn" id="nav-paginas" onclick="showSection('paginas', this)">
+    <span class="nav-icon">📖</span>
+    <span>Páginas</span>
+  </button>
+  <button class="nav-btn" id="nav-meta" onclick="showSection('meta', this)">
+    <span class="nav-icon">🎯</span>
+    <span>Meta</span>
+  </button>
+</nav>
 
 <div id="setup-banner">
   <p>🔗 URL do seu Apps Script:</p>
@@ -554,80 +752,109 @@
 
 <main>
 
-  <div class="stats" id="stats"></div>
+  <!-- ── Seção: Livros ── -->
+  <div class="app-section visible" id="section-livros">
+    <div class="stats" id="stats"></div>
 
-  <div class="tabs">
-    <button class="tab-btn active" onclick="setTab('Lendo', this)">Lendo</button>
-    <button class="tab-btn" onclick="setTab('Concluído', this)">Concluídos</button>
-    <button class="tab-btn" onclick="setTab('Pausado', this)">Pausados</button>
-    <button class="tab-btn" onclick="setTab('todos', this)">Todos</button>
-  </div>
-
-  <div class="books" id="books-list"></div>
-
-  <!-- Páginas lidas -->
-  <div class="pages-section">
-    <span class="section-title">Páginas lidas</span>
-    <div class="pages-card">
-      <div class="pages-tabs">
-        <button class="pages-tab active" onclick="setPagesTab('hoje', this)">Hoje</button>
-        <button class="pages-tab" onclick="setPagesTab('semana', this)">Esta semana</button>
-        <button class="pages-tab" onclick="setPagesTab('mes', this)">Este mês</button>
-        <button class="pages-tab" onclick="setPagesTab('ano', this)">Este ano</button>
-        <button class="pages-tab" onclick="setPagesTab('total', this)">Total</button>
-      </div>
-      <div class="pages-body">
-        <div class="pages-big">
-          <span class="pages-number" id="pages-number">0</span>
-          <span class="pages-unit">páginas</span>
-        </div>
-        <div class="pages-subtitle" id="pages-subtitle">lidas hoje</div>
-        <div class="pages-breakdown" id="pages-breakdown"></div>
-        <div class="pages-add-section">
-          <span class="pages-add-label">💡 As páginas são calculadas automaticamente ao salvar o progresso de cada livro.</span>
-        </div>
+    <div class="search-wrap">
+      <div class="search-bar">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Buscar por título ou autor…" oninput="onSearch(this.value)" autocomplete="off" />
+        <button class="search-clear" id="search-clear" onclick="clearSearch()" title="Limpar busca">✕</button>
       </div>
     </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="setTab('Lendo', this)">Lendo</button>
+      <button class="tab-btn" onclick="setTab('Concluído', this)">Concluídos</button>
+      <button class="tab-btn" onclick="setTab('Pausado', this)">Pausados</button>
+      <button class="tab-btn" onclick="setTab('todos', this)">Todos</button>
+    </div>
+
+    <div class="books" id="books-list"></div>
   </div>
 
-  <!-- Meta anual -->
-  <div class="annual-section">
-    <div class="annual-header">
-      <span class="annual-title">Meta anual de leitura</span>
-      <div class="year-selector">
-        <button onclick="changeYear(-1)">&#8249;</button>
-        <span id="selected-year"></span>
-        <button onclick="changeYear(1)">&#8250;</button>
+  <!-- ── Seção: Páginas ── -->
+  <div class="app-section" id="section-paginas">
+    <div class="pages-section">
+      <span class="section-title">Páginas lidas</span>
+
+      <!-- Gráfico de resumo -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <span class="chart-title">Visão geral</span>
+          <div class="chart-legend" id="chart-legend"></div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="pages-chart" height="180"></canvas>
+          <div class="chart-tooltip" id="chart-tooltip"></div>
+        </div>
       </div>
-    </div>
-    <div class="goal-card">
-      <div class="goal-top">
-        <div>
-          <div class="goal-numbers">
-            <span class="goal-count" id="goal-count">0</span>
-            <span class="goal-sep">/</span>
-            <span class="goal-target" id="goal-target">—</span>
+
+      <div class="pages-card">
+        <div class="pages-tabs">
+          <button class="pages-tab active" onclick="setPagesTab('hoje', this)">Hoje</button>
+          <button class="pages-tab" onclick="setPagesTab('semana', this)">Esta semana</button>
+          <button class="pages-tab" onclick="setPagesTab('mes', this)">Este mês</button>
+          <button class="pages-tab" onclick="setPagesTab('ano', this)">Este ano</button>
+          <button class="pages-tab" onclick="setPagesTab('total', this)">Total</button>
+        </div>
+        <div class="pages-body">
+          <div class="pages-big">
+            <span class="pages-number" id="pages-number">0</span>
+            <span class="pages-unit">páginas</span>
           </div>
-          <div class="goal-label">livros concluídos</div>
-        </div>
-        <div class="goal-set">
-          <input type="number" id="goal-input" min="1" max="999" placeholder="Meta" />
-          <button onclick="saveGoal()">Definir meta</button>
-        </div>
-      </div>
-      <div class="goal-bar-wrap" id="goal-bar-wrap">
-        <div class="goal-bar-track">
-          <div class="goal-bar-fill" id="goal-bar-fill" style="width:0%"></div>
-        </div>
-        <div class="goal-bar-labels">
-          <span id="goal-bar-pct">0%</span>
-          <span id="goal-bar-remaining"></span>
+          <div class="pages-subtitle" id="pages-subtitle">lidas hoje</div>
+          <div class="pages-breakdown" id="pages-breakdown"></div>
+          <div class="pages-add-section">
+            <span class="pages-add-label">💡 As páginas são calculadas automaticamente ao salvar o progresso de cada livro.</span>
+          </div>
         </div>
       </div>
-      <div class="goal-msg" id="goal-msg"></div>
     </div>
-    <div class="year-history" id="year-history"></div>
   </div>
+
+  <!-- ── Seção: Meta ── -->
+  <div class="app-section" id="section-meta">
+    <div class="annual-section">
+      <div class="annual-header">
+        <span class="annual-title">Meta anual de leitura</span>
+        <div class="year-selector">
+          <button onclick="changeYear(-1)">&#8249;</button>
+          <span id="selected-year"></span>
+          <button onclick="changeYear(1)">&#8250;</button>
+        </div>
+      </div>
+      <div class="goal-card">
+        <div class="goal-top">
+          <div>
+            <div class="goal-numbers">
+              <span class="goal-count" id="goal-count">0</span>
+              <span class="goal-sep">/</span>
+              <span class="goal-target" id="goal-target">—</span>
+            </div>
+            <div class="goal-label">livros concluídos</div>
+          </div>
+          <div class="goal-set">
+            <input type="number" id="goal-input" min="1" max="999" placeholder="Meta" />
+            <button onclick="saveGoal()">Definir meta</button>
+          </div>
+        </div>
+        <div class="goal-bar-wrap" id="goal-bar-wrap">
+          <div class="goal-bar-track">
+            <div class="goal-bar-fill" id="goal-bar-fill" style="width:0%"></div>
+          </div>
+          <div class="goal-bar-labels">
+            <span id="goal-bar-pct">0%</span>
+            <span id="goal-bar-remaining"></span>
+          </div>
+        </div>
+        <div class="goal-msg" id="goal-msg"></div>
+      </div>
+      <div class="year-history" id="year-history"></div>
+    </div>
+  </div>
+
 </main>
 
 <!-- Modal -->
@@ -709,6 +936,8 @@
   function toggleTheme() {
     const current = document.documentElement.getAttribute('data-theme') || 'dark';
     applyTheme(current === 'dark' ? 'light' : 'dark');
+    // Redesenha o gráfico com as novas cores
+    requestAnimationFrame(drawChart);
   }
 
   // Apply saved theme on load
@@ -724,15 +953,19 @@
   let avgPagesPerDay = 0; // calculado do histórico total
 
   /* ── Date helpers ── */
-  // Usa o fuso local do usuário (evita o bug do toISOString() que retorna UTC)
-  function localDateStr(date) {
-    const d = date || new Date();
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  // ⚠️ Não usar toISOString() — ela retorna UTC e pode virar "amanhã" após 21h no Brasil.
+  // Usamos o horário LOCAL do dispositivo sempre.
+  function localDateStr(d = new Date()) {
+    const y  = d.getFullYear();
+    const m  = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dd}`;
   }
   function todayStr() { return localDateStr(); }
   function getWeekStart() {
-    const d = new Date(), day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    const d   = new Date();
+    const day = d.getDay(); // 0 = Dom
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // volta pra segunda
     d.setDate(diff);
     return localDateStr(d);
   }
@@ -767,6 +1000,10 @@
     renderPages();
   }
 
+  // Cache de totais para o gráfico
+  let pagesTotals = { hoje: 0, semana: 0, mes: 0, ano: 0 };
+  let chartAnimFrame = null;
+
   async function renderPages() {
     const subtitles = {
       hoje:   'lidas hoje',
@@ -784,6 +1021,11 @@
       const total   = entries.reduce((s, e) => s + (parseInt(e.pages) || 0), 0);
       document.getElementById('pages-number').textContent = total.toLocaleString('pt-BR');
 
+      // armazena total do período atual
+      if (['hoje','semana','mes','ano'].includes(currentPagesTab)) {
+        pagesTotals[currentPagesTab] = total;
+      }
+
       const byBook = {};
       entries.forEach(e => {
         const key = e.bookTitle || '(sem livro)';
@@ -799,7 +1041,191 @@
     } catch(e) {
       document.getElementById('pages-number').textContent = '—';
     }
+
+    // Carrega todos os períodos para o gráfico (só se ainda não carregados)
+    await loadAllPeriodsForChart();
   }
+
+  async function loadAllPeriodsForChart() {
+    const periods = ['hoje', 'semana', 'mes', 'ano'];
+    const missing = periods.filter(p => pagesTotals[p] === 0 && p !== currentPagesTab);
+    try {
+      await Promise.all(missing.map(async p => {
+        const d = await api({ action: 'getPages', period: p });
+        pagesTotals[p] = (d.entries || []).reduce((s, e) => s + (parseInt(e.pages) || 0), 0);
+      }));
+    } catch(_) {}
+    drawChart();
+  }
+
+  function drawChart() {
+    const canvas = document.getElementById('pages-chart');
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    const W = canvas.offsetWidth;
+    const H = 180;
+    canvas.width  = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width  = W + 'px';
+    canvas.style.height = H + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+    const colorText    = isDark ? '#c0caf5' : '#3d2b1f';
+    const colorDim     = isDark ? '#565f89' : '#9ecfcb';
+    const colorGrid    = isDark ? '#292e42' : '#BADFDB';
+    const barColors = [
+      { base: '#f7768e', light: '#2d1f26' },  // hoje
+      { base: '#7aa2f7', light: '#1a2b3c' },  // semana
+      { base: '#9ece6a', light: '#1a2b1a' },  // mês
+      { base: '#e0af68', light: '#2a2018' },  // ano
+    ];
+
+    const labels = ['Hoje', 'Semana', 'Mês', 'Ano'];
+    const values = [pagesTotals.hoje, pagesTotals.semana, pagesTotals.mes, pagesTotals.ano];
+    const maxVal = Math.max(...values, 1);
+
+    const padL = 44, padR = 12, padT = 12, padB = 36;
+    const chartW = W - padL - padR;
+    const chartH = H - padT - padB;
+    const barCount = 4;
+    const barGap = 14;
+    const barW = (chartW - barGap * (barCount - 1)) / barCount;
+
+    // Grid lines
+    const gridLines = 4;
+    ctx.strokeStyle = colorGrid;
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= gridLines; i++) {
+      const y = padT + chartH - (i / gridLines) * chartH;
+      ctx.beginPath();
+      ctx.moveTo(padL, y);
+      ctx.lineTo(padL + chartW, y);
+      ctx.stroke();
+      // grid labels
+      const val = Math.round((i / gridLines) * maxVal);
+      ctx.fillStyle = colorDim;
+      ctx.font = `10px 'DM Sans', sans-serif`;
+      ctx.textAlign = 'right';
+      ctx.fillText(val > 999 ? (val/1000).toFixed(1)+'k' : val, padL - 5, y + 3.5);
+    }
+
+    // Animate bars
+    if (chartAnimFrame) cancelAnimationFrame(chartAnimFrame);
+    let progress = 0;
+    const duration = 40; // frames
+    function animate() {
+      progress = Math.min(progress + 1, duration);
+      const ease = 1 - Math.pow(1 - progress / duration, 3); // ease-out cubic
+
+      ctx.clearRect(padL, padT, chartW, chartH + 1);
+
+      // redraw grid (clearing wiped it)
+      ctx.strokeStyle = colorGrid;
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= gridLines; i++) {
+        const y = padT + chartH - (i / gridLines) * chartH;
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + chartW, y); ctx.stroke();
+        ctx.fillStyle = colorDim;
+        ctx.font = `10px 'DM Sans', sans-serif`;
+        ctx.textAlign = 'right';
+        const val = Math.round((i / gridLines) * maxVal);
+        ctx.fillText(val > 999 ? (val/1000).toFixed(1)+'k' : val, padL - 5, y + 3.5);
+      }
+
+      values.forEach((val, i) => {
+        const x = padL + i * (barW + barGap);
+        const barH = val > 0 ? Math.max(4, (val / maxVal) * chartH * ease) : 0;
+        const y = padT + chartH - barH;
+        const color = barColors[i];
+
+        // rounded top bar
+        ctx.beginPath();
+        const r = Math.min(6, barW / 2, barH);
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + barW - r, y);
+        ctx.quadraticCurveTo(x + barW, y, x + barW, y + r);
+        ctx.lineTo(x + barW, padT + chartH);
+        ctx.lineTo(x, padT + chartH);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+        ctx.fillStyle = color.base;
+        ctx.globalAlpha = 0.85;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+
+        // label below
+        ctx.fillStyle = colorText;
+        ctx.font = `500 11px 'DM Sans', sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(labels[i], x + barW / 2, H - padB + 16);
+
+        // value above bar (only when complete)
+        if (progress === duration && val > 0) {
+          ctx.fillStyle = colorDim;
+          ctx.font = `500 10px 'DM Sans', sans-serif`;
+          ctx.textAlign = 'center';
+          const display = val > 999 ? (val/1000).toFixed(1)+'k' : val;
+          ctx.fillText(display, x + barW / 2, y - 4);
+        }
+      });
+
+      if (progress < duration) chartAnimFrame = requestAnimationFrame(animate);
+    }
+    animate();
+
+    // Legend
+    const legendEl = document.getElementById('chart-legend');
+    if (legendEl) {
+      legendEl.innerHTML = labels.map((l, i) => `
+        <div class="chart-legend-item">
+          <div class="chart-legend-dot" style="background:${barColors[i].base}"></div>
+          ${l}
+        </div>`).join('');
+    }
+
+    // Tooltip on hover/touch
+    function getHoveredBar(mx) {
+      for (let i = 0; i < 4; i++) {
+        const x = padL + i * (barW + barGap);
+        if (mx >= x && mx <= x + barW) return i;
+      }
+      return -1;
+    }
+
+    const tooltipEl = document.getElementById('chart-tooltip');
+    const periodLabels = ['hoje', 'esta semana', 'este mês', `em ${new Date().getFullYear()}`];
+
+    function showTooltip(mx, my) {
+      const rect = canvas.getBoundingClientRect();
+      const relX = mx - rect.left;
+      const relY = my - rect.top;
+      const idx = getHoveredBar(relX);
+      if (idx < 0 || relY > H - padB + 8) { tooltipEl.classList.remove('visible'); return; }
+      const val = values[idx];
+      tooltipEl.innerHTML = `<strong>${val.toLocaleString('pt-BR')} págs</strong>${labels[idx]} — ${periodLabels[idx]}`;
+      const tipX = padL + idx * (barW + barGap) + barW / 2;
+      const barH = val > 0 ? Math.max(4, (val / maxVal) * chartH) : 0;
+      const tipY = padT + chartH - barH - 8;
+      tooltipEl.style.left = Math.min(tipX - 60, W - 170) + 'px';
+      tooltipEl.style.top  = Math.max(0, tipY - 50) + 'px';
+      tooltipEl.classList.add('visible');
+    }
+
+    canvas.onmousemove = e => showTooltip(e.clientX, e.clientY);
+    canvas.onmouseleave = () => tooltipEl.classList.remove('visible');
+    canvas.ontouchmove  = e => { e.preventDefault(); const t = e.touches[0]; showTooltip(t.clientX, t.clientY); };
+    canvas.ontouchend   = () => setTimeout(() => tooltipEl.classList.remove('visible'), 1500);
+  }
+
+  // Redesenha o gráfico ao redimensionar a janela
+  window.addEventListener('resize', () => {
+    if (document.getElementById('section-paginas').classList.contains('visible')) {
+      drawChart();
+    }
+  });
 
   /* ── Year / Goal logic ── */
   function changeYear(delta) {
@@ -968,9 +1394,37 @@
 
   function setTab(tab, el) {
     currentTab = tab;
+    searchQuery = '';
+    document.getElementById('search-input').value = '';
+    document.getElementById('search-clear').classList.remove('visible');
     document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
     el.classList.add('active');
     render();
+  }
+
+  let searchQuery = '';
+
+  function onSearch(val) {
+    searchQuery = val.trim().toLowerCase();
+    document.getElementById('search-clear').classList.toggle('visible', searchQuery.length > 0);
+    renderBooks();
+  }
+
+  function clearSearch() {
+    searchQuery = '';
+    document.getElementById('search-input').value = '';
+    document.getElementById('search-clear').classList.remove('visible');
+    renderBooks();
+  }
+
+  function showSection(name, btn) {
+    document.querySelectorAll('.app-section').forEach(s => s.classList.remove('visible'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('section-' + name).classList.add('visible');
+    btn.classList.add('active');
+    // lazy load pages when section shown
+    if (name === 'paginas') renderPages();
+    if (name === 'meta') { renderGoal(); renderYearHistory(); }
   }
 
   function render() {
@@ -992,8 +1446,15 @@
   function renderBooks() {
     const list = document.getElementById('books-list');
     let filtered = currentTab === 'todos' ? books : books.filter(b => b.status === currentTab);
+    if (searchQuery) {
+      filtered = filtered.filter(b =>
+        b.titulo.toLowerCase().includes(searchQuery) ||
+        (b.autor || '').toLowerCase().includes(searchQuery)
+      );
+    }
     if (!filtered.length) {
-      list.innerHTML = `<div class="empty"><div class="empty-icon">📚</div><p>Nenhum livro aqui ainda.</p></div>`;
+      const msg = searchQuery ? `Nenhum livro encontrado para "<strong>${esc(searchQuery)}</strong>".` : 'Nenhum livro aqui ainda.';
+      list.innerHTML = `<div class="empty"><div class="empty-icon">📚</div><p>${msg}</p></div>`;
       return;
     }
     list.innerHTML = filtered.map(b => {
