@@ -671,6 +671,23 @@
   [data-theme="light"] .chart-tooltip {
     background: #FCF9EA; border-color: #BADFDB;
   }
+  /* ── Records ── */
+  .records-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: .75rem; }
+  .record-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 14px 12px; box-shadow: var(--shadow-card); position: relative; overflow: hidden; }
+  .record-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .rec-dia::before { background: #f7768e; } .rec-semana::before { background: #7aa2f7; } .rec-mes::before { background: #9ece6a; } .rec-ano::before { background: #e0af68; }
+  .record-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
+  .rec-dia .record-label { color: #f7768e; } .rec-semana .record-label { color: #7aa2f7; } .rec-mes .record-label { color: #9ece6a; } .rec-ano .record-label { color: #e0af68; }
+  .record-value { font-family: "Playfair Display", serif; font-size: 26px; font-weight: 600; color: var(--text); line-height: 1; }
+  .record-unit { font-size: 12px; color: var(--text-dim); margin-left: 2px; }
+  .record-date { font-size: 11px; color: var(--text-dim); margin-top: 6px; }
+  .record-compare { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; padding: 3px 8px; border-radius: 50px; font-size: 11px; font-weight: 500; }
+  .record-compare.up { background: rgba(158,206,106,.15); color: #9ece6a; }
+  .record-compare.down { background: rgba(247,118,142,.15); color: #f7768e; }
+  .record-compare.same { background: var(--cream); color: var(--text-dim); }
+  .record-compare.is-record { background: rgba(224,175,104,.15); color: #e0af68; }
+  .records-section-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--text-dim); margin: 1.25rem 0 .5rem; }
+
   .estimate-row {
     display: flex; align-items: center; gap: 8px;
     margin-top: 8px; padding: 10px 14px;
@@ -790,6 +807,10 @@
           <div class="chart-tooltip" id="chart-tooltip"></div>
         </div>
       </div>
+
+      <!-- Records section -->
+      <p class="records-section-title">🏆 Seus recordes</p>
+      <div class="records-grid" id="records-grid"></div>
 
       <div class="pages-card">
         <div class="pages-tabs">
@@ -1003,6 +1024,7 @@
   // Cache de totais para o gráfico
   let pagesTotals = { hoje: 0, semana: 0, mes: 0, ano: 0 };
   let chartAnimFrame = null;
+  let allEntriesCache = null; // cache para cálculo de recordes
 
   async function renderPages() {
     const subtitles = {
@@ -1021,7 +1043,6 @@
       const total   = entries.reduce((s, e) => s + (parseInt(e.pages) || 0), 0);
       document.getElementById('pages-number').textContent = total.toLocaleString('pt-BR');
 
-      // armazena total do período atual
       if (['hoje','semana','mes','ano'].includes(currentPagesTab)) {
         pagesTotals[currentPagesTab] = total;
       }
@@ -1042,7 +1063,6 @@
       document.getElementById('pages-number').textContent = '—';
     }
 
-    // Carrega todos os períodos para o gráfico (só se ainda não carregados)
     await loadAllPeriodsForChart();
   }
 
@@ -1056,6 +1076,121 @@
       }));
     } catch(_) {}
     drawChart();
+    await renderRecords();
+  }
+
+  // ── Helpers de data ──
+  function getWeekKeyOf(dateStr) {
+    const d   = new Date(dateStr + 'T12:00:00');
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    d.setDate(diff);
+    return localDateStr(d);
+  }
+  function fmtDate(d) {
+    if (!d) return '—';
+    const [y,m,dd] = d.split('-');
+    const months = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+    return `${parseInt(dd)} ${months[parseInt(m)-1]}. ${y}`;
+  }
+  function fmtMonth(mo) {
+    if (!mo) return '—';
+    const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const [y,m] = mo.split('-');
+    return `${months[parseInt(m)-1]} ${y}`;
+  }
+
+  // ── Recordes ──
+  async function renderRecords() {
+    const grid = document.getElementById('records-grid');
+    if (!grid) return;
+    grid.innerHTML = '<div style="color:var(--text-dim);font-size:12px;grid-column:1/-1;padding:8px 0">Calculando recordes…</div>';
+    try {
+      if (!allEntriesCache) {
+        const d = await api({ action: 'getPages', period: 'total' });
+        allEntriesCache = d.entries || [];
+      }
+      const entries = allEntriesCache;
+      if (!entries.length) {
+        grid.innerHTML = '<div style="color:var(--text-dim);font-size:12px;grid-column:1/-1;padding:8px 0">Sem histórico ainda.</div>';
+        return;
+      }
+
+      const today   = todayStr();
+      const wkStart = getWeekStart();
+      const moStart = today.slice(0,7) + '-01';
+      const yrStart = today.slice(0,4) + '-01-01';
+
+      // Recorde DIA
+      const byDay = {};
+      entries.forEach(e => { if (e.date) byDay[e.date] = (byDay[e.date]||0) + (parseInt(e.pages)||0); });
+      const bestDayDate = Object.keys(byDay).reduce((a,b) => byDay[a]>=byDay[b]?a:b, '');
+      const bestDayVal  = byDay[bestDayDate] || 0;
+      const curDay      = entries.filter(e => e.date===today).reduce((s,e)=>s+(parseInt(e.pages)||0),0);
+
+      // Recorde SEMANA
+      const byWeek = {};
+      entries.forEach(e => { if (e.date) { const k=getWeekKeyOf(e.date); byWeek[k]=(byWeek[k]||0)+(parseInt(e.pages)||0); }});
+      const bestWkKey = Object.keys(byWeek).reduce((a,b) => byWeek[a]>=byWeek[b]?a:b, '');
+      const bestWkVal = byWeek[bestWkKey] || 0;
+      const curWk     = entries.filter(e => e.date>=wkStart&&e.date<=today).reduce((s,e)=>s+(parseInt(e.pages)||0),0);
+
+      // Recorde MÊS
+      const byMonth = {};
+      entries.forEach(e => { if (e.date) { const k=e.date.slice(0,7); byMonth[k]=(byMonth[k]||0)+(parseInt(e.pages)||0); }});
+      const bestMoKey = Object.keys(byMonth).reduce((a,b) => byMonth[a]>=byMonth[b]?a:b, '');
+      const bestMoVal = byMonth[bestMoKey] || 0;
+      const curMo     = entries.filter(e => e.date>=moStart&&e.date<=today).reduce((s,e)=>s+(parseInt(e.pages)||0),0);
+
+      // Recorde ANO
+      const byYear = {};
+      entries.forEach(e => { if (e.date) { const k=e.date.slice(0,4); byYear[k]=(byYear[k]||0)+(parseInt(e.pages)||0); }});
+      const bestYrKey = Object.keys(byYear).reduce((a,b) => byYear[a]>=byYear[b]?a:b, '');
+      const bestYrVal = byYear[bestYrKey] || 0;
+      const curYr     = entries.filter(e => e.date>=yrStart&&e.date<=today).reduce((s,e)=>s+(parseInt(e.pages)||0),0);
+
+      function badge(cur, rec) {
+        if (!rec) return '';
+        if (cur > 0 && cur >= rec) return `<span class="record-compare is-record">🏆 Recorde atual!</span>`;
+        const diff = cur - rec;
+        if (diff > 0) return `<span class="record-compare up">▲ +${Math.abs(diff).toLocaleString('pt-BR')} vs recorde</span>`;
+        if (diff < 0) return `<span class="record-compare down">▼ faltam ${Math.abs(diff).toLocaleString('pt-BR')} pgs</span>`;
+        return `<span class="record-compare same">= Igual ao recorde</span>`;
+      }
+
+      grid.innerHTML = `
+        <div class="record-card rec-dia">
+          <div class="record-label">Melhor dia</div>
+          <div class="record-value">${bestDayVal.toLocaleString('pt-BR')}<span class="record-unit"> pgs</span></div>
+          <div class="record-date">📅 ${fmtDate(bestDayDate)}</div>
+          <div class="record-date" style="margin-top:3px">Hoje: <strong>${curDay.toLocaleString('pt-BR')}</strong> pgs</div>
+          ${badge(curDay, bestDayVal)}
+        </div>
+        <div class="record-card rec-semana">
+          <div class="record-label">Melhor semana</div>
+          <div class="record-value">${bestWkVal.toLocaleString('pt-BR')}<span class="record-unit"> pgs</span></div>
+          <div class="record-date">📅 sem. de ${fmtDate(bestWkKey)}</div>
+          <div class="record-date" style="margin-top:3px">Esta sem.: <strong>${curWk.toLocaleString('pt-BR')}</strong> pgs</div>
+          ${badge(curWk, bestWkVal)}
+        </div>
+        <div class="record-card rec-mes">
+          <div class="record-label">Melhor mês</div>
+          <div class="record-value">${bestMoVal.toLocaleString('pt-BR')}<span class="record-unit"> pgs</span></div>
+          <div class="record-date">📅 ${fmtMonth(bestMoKey)}</div>
+          <div class="record-date" style="margin-top:3px">Este mês: <strong>${curMo.toLocaleString('pt-BR')}</strong> pgs</div>
+          ${badge(curMo, bestMoVal)}
+        </div>
+        <div class="record-card rec-ano">
+          <div class="record-label">Melhor ano</div>
+          <div class="record-value">${bestYrVal.toLocaleString('pt-BR')}<span class="record-unit"> pgs</span></div>
+          <div class="record-date">📅 ${bestYrKey || '—'}</div>
+          <div class="record-date" style="margin-top:3px">Este ano: <strong>${curYr.toLocaleString('pt-BR')}</strong> pgs</div>
+          ${badge(curYr, bestYrVal)}
+        </div>`;
+    } catch(err) {
+      const grid = document.getElementById('records-grid');
+      if (grid) grid.innerHTML = '<div style="color:var(--text-dim);font-size:12px;grid-column:1/-1">Não foi possível calcular recordes.</div>';
+    }
   }
 
   function drawChart() {
