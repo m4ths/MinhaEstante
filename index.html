@@ -809,8 +809,8 @@
       </div>
 
       <!-- Records section -->
-      <p class="records-section-title">🏆 Seus recordes</p>
-      <div class="records-grid" id="records-grid"></div>
+      <!-- records-grid hidden: recordes visíveis diretamente no gráfico -->
+      <div id="records-grid" style="display:none"></div>
 
       <div class="pages-card">
         <div class="pages-tabs">
@@ -1149,6 +1149,14 @@
       const bestYrVal = byYear[bestYrKey] || 0;
       const curYr     = entries.filter(e => e.date>=yrStart&&e.date<=today).reduce((s,e)=>s+(parseInt(e.pages)||0),0);
 
+      // Expõe recordes para o drawChart usar nas linhas tracejadas
+      window._recBestDay = bestDayVal;
+      window._recBestWk  = bestWkVal;
+      window._recBestMo  = bestMoVal;
+      window._recBestYr  = bestYrVal;
+      // Redesenha o gráfico com as linhas de recorde agora disponíveis
+      drawChart();
+
       function badge(cur, rec) {
         if (!rec) return '';
         if (cur > 0 && cur >= rec) return `<span class="record-compare is-record">🏆 Recorde atual!</span>`;
@@ -1198,7 +1206,7 @@
     if (!canvas) return;
     const dpr = window.devicePixelRatio || 1;
     const W = canvas.offsetWidth;
-    const H = 180;
+    const H = 210; // altura extra para acomodar linha de recorde acima
     canvas.width  = W * dpr;
     canvas.height = H * dpr;
     canvas.style.width  = W + 'px';
@@ -1207,38 +1215,44 @@
     ctx.scale(dpr, dpr);
 
     const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
-    const colorText    = isDark ? '#c0caf5' : '#3d2b1f';
-    const colorDim     = isDark ? '#565f89' : '#9ecfcb';
-    const colorGrid    = isDark ? '#292e42' : '#BADFDB';
+    const colorText = isDark ? '#c0caf5' : '#3d2b1f';
+    const colorDim  = isDark ? '#565f89' : '#9ecfcb';
+    const colorGrid = isDark ? '#292e42' : '#BADFDB';
     const barColors = [
-      { base: '#f7768e', light: '#2d1f26' },  // hoje
-      { base: '#7aa2f7', light: '#1a2b3c' },  // semana
-      { base: '#9ece6a', light: '#1a2b1a' },  // mês
-      { base: '#e0af68', light: '#2a2018' },  // ano
+      { base: '#f7768e' },  // hoje
+      { base: '#7aa2f7' },  // semana
+      { base: '#9ece6a' },  // mês
+      { base: '#e0af68' },  // ano
     ];
+    const GOLD = '#e0af68';
 
     const labels = ['Hoje', 'Semana', 'Mês', 'Ano'];
     const values = [pagesTotals.hoje, pagesTotals.semana, pagesTotals.mes, pagesTotals.ano];
-    const maxVal = Math.max(...values, 1);
 
-    const padL = 44, padR = 12, padT = 12, padB = 36;
+    // Recordes por período (populados por renderRecords se disponível)
+    const recValues = [
+      window._recBestDay  || 0,
+      window._recBestWk   || 0,
+      window._recBestMo   || 0,
+      window._recBestYr   || 0,
+    ];
+
+    const maxVal = Math.max(...values, ...recValues, 1);
+
+    const padL = 44, padR = 12, padT = 18, padB = 36;
     const chartW = W - padL - padR;
     const chartH = H - padT - padB;
     const barCount = 4;
     const barGap = 14;
     const barW = (chartW - barGap * (barCount - 1)) / barCount;
 
-    // Grid lines
+    // ── Grid lines ──
     const gridLines = 4;
     ctx.strokeStyle = colorGrid;
     ctx.lineWidth = 1;
     for (let i = 0; i <= gridLines; i++) {
       const y = padT + chartH - (i / gridLines) * chartH;
-      ctx.beginPath();
-      ctx.moveTo(padL, y);
-      ctx.lineTo(padL + chartW, y);
-      ctx.stroke();
-      // grid labels
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + chartW, y); ctx.stroke();
       const val = Math.round((i / gridLines) * maxVal);
       ctx.fillStyle = colorDim;
       ctx.font = `10px 'DM Sans', sans-serif`;
@@ -1246,64 +1260,112 @@
       ctx.fillText(val > 999 ? (val/1000).toFixed(1)+'k' : val, padL - 5, y + 3.5);
     }
 
-    // Animate bars
+    // ── Animate bars ──
     if (chartAnimFrame) cancelAnimationFrame(chartAnimFrame);
     let progress = 0;
-    const duration = 40; // frames
+    const duration = 40;
     function animate() {
       progress = Math.min(progress + 1, duration);
-      const ease = 1 - Math.pow(1 - progress / duration, 3); // ease-out cubic
+      const ease = 1 - Math.pow(1 - progress / duration, 3);
 
-      ctx.clearRect(padL, padT, chartW, chartH + 1);
+      ctx.clearRect(padL, padT, chartW + padR, chartH + padB);
 
-      // redraw grid (clearing wiped it)
-      ctx.strokeStyle = colorGrid;
-      ctx.lineWidth = 1;
+      // redraw grid
+      ctx.strokeStyle = colorGrid; ctx.lineWidth = 1;
       for (let i = 0; i <= gridLines; i++) {
         const y = padT + chartH - (i / gridLines) * chartH;
         ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + chartW, y); ctx.stroke();
-        ctx.fillStyle = colorDim;
-        ctx.font = `10px 'DM Sans', sans-serif`;
-        ctx.textAlign = 'right';
         const val = Math.round((i / gridLines) * maxVal);
+        ctx.fillStyle = colorDim; ctx.font = `10px 'DM Sans', sans-serif`; ctx.textAlign = 'right';
         ctx.fillText(val > 999 ? (val/1000).toFixed(1)+'k' : val, padL - 5, y + 3.5);
       }
 
       values.forEach((val, i) => {
-        const x = padL + i * (barW + barGap);
-        const barH = val > 0 ? Math.max(4, (val / maxVal) * chartH * ease) : 0;
-        const y = padT + chartH - barH;
+        const x     = padL + i * (barW + barGap);
+        const recV  = recValues[i];
+        const isRec = recV > 0 && val >= recV;
+        const barH  = val > 0 ? Math.max(4, (val / maxVal) * chartH * ease) : 0;
+        const y     = padT + chartH - barH;
         const color = barColors[i];
 
-        // rounded top bar
+        // ── Barra ──
         ctx.beginPath();
-        const r = Math.min(6, barW / 2, barH);
-        ctx.moveTo(x + r, y);
-        ctx.lineTo(x + barW - r, y);
-        ctx.quadraticCurveTo(x + barW, y, x + barW, y + r);
-        ctx.lineTo(x + barW, padT + chartH);
-        ctx.lineTo(x, padT + chartH);
-        ctx.lineTo(x, y + r);
-        ctx.quadraticCurveTo(x, y, x + r, y);
-        ctx.closePath();
-        ctx.fillStyle = color.base;
-        ctx.globalAlpha = 0.85;
+        const r = Math.min(6, barW / 2, barH || 1);
+        if (barH > 0) {
+          ctx.moveTo(x + r, y);
+          ctx.lineTo(x + barW - r, y);
+          ctx.quadraticCurveTo(x + barW, y, x + barW, y + r);
+          ctx.lineTo(x + barW, padT + chartH);
+          ctx.lineTo(x, padT + chartH);
+          ctx.lineTo(x, y + r);
+          ctx.quadraticCurveTo(x, y, x + r, y);
+          ctx.closePath();
+        }
+
+        if (isRec) {
+          // Gradiente dourado quando é recorde
+          const grad = ctx.createLinearGradient(x, y, x, padT + chartH);
+          grad.addColorStop(0, GOLD);
+          grad.addColorStop(1, color.base);
+          ctx.fillStyle = grad;
+          ctx.globalAlpha = 0.95;
+        } else {
+          ctx.fillStyle = color.base;
+          ctx.globalAlpha = 0.82;
+        }
         ctx.fill();
         ctx.globalAlpha = 1;
 
-        // label below
+        // ── Label abaixo ──
         ctx.fillStyle = colorText;
         ctx.font = `500 11px 'DM Sans', sans-serif`;
         ctx.textAlign = 'center';
         ctx.fillText(labels[i], x + barW / 2, H - padB + 16);
 
-        // value above bar (only when complete)
+        // ── Linha de recorde tracejada ──
+        if (recV > 0 && progress === duration) {
+          const recY = padT + chartH - (recV / maxVal) * chartH;
+          ctx.save();
+          ctx.strokeStyle = GOLD;
+          ctx.lineWidth = 1.5;
+          ctx.globalAlpha = 0.7;
+          ctx.setLineDash([4, 3]);
+          ctx.beginPath();
+          ctx.moveTo(x - 2, recY);
+          ctx.lineTo(x + barW + 2, recY);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.globalAlpha = 1;
+          ctx.restore();
+
+          // Ícone 🏆 à direita da linha
+          ctx.font = `9px sans-serif`;
+          ctx.textAlign = 'left';
+          ctx.globalAlpha = isRec ? 1 : 0.75;
+          ctx.fillText('🏆', x + barW + 3, recY + 3.5);
+          ctx.globalAlpha = 1;
+
+          // Valor do recorde (só se a barra não está batendo ele — para não sobrepor)
+          if (!isRec) {
+            ctx.fillStyle = GOLD;
+            ctx.font = `500 9px 'DM Sans', sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.globalAlpha = 0.85;
+            const recDisplay = recV > 999 ? (recV/1000).toFixed(1)+'k' : recV;
+            ctx.fillText(recDisplay, x + barW / 2, recY - 3);
+            ctx.globalAlpha = 1;
+          }
+        }
+
+        // ── Valor atual acima da barra ──
         if (progress === duration && val > 0) {
-          ctx.fillStyle = colorDim;
-          ctx.font = `500 10px 'DM Sans', sans-serif`;
+          ctx.fillStyle = isRec ? GOLD : colorDim;
+          ctx.font = `${isRec ? '600' : '500'} 10px 'DM Sans', sans-serif`;
           ctx.textAlign = 'center';
+          ctx.globalAlpha = isRec ? 1 : 0.9;
           const display = val > 999 ? (val/1000).toFixed(1)+'k' : val;
-          ctx.fillText(display, x + barW / 2, y - 4);
+          ctx.fillText(display, x + barW / 2, y - 5);
+          ctx.globalAlpha = 1;
         }
       });
 
@@ -1311,17 +1373,21 @@
     }
     animate();
 
-    // Legend
+    // ── Legend ──
     const legendEl = document.getElementById('chart-legend');
     if (legendEl) {
+      const hasRec = recValues.some(v => v > 0);
       legendEl.innerHTML = labels.map((l, i) => `
         <div class="chart-legend-item">
-          <div class="chart-legend-dot" style="background:${barColors[i].base}"></div>
-          ${l}
-        </div>`).join('');
+          <div class="chart-legend-dot" style="background:${barColors[i].base}"></div>${l}
+        </div>`).join('') + (hasRec ? `
+        <div class="chart-legend-item">
+          <span style="font-size:10px;margin-right:2px">🏆</span>
+          <span style="color:${GOLD}">Recorde</span>
+        </div>` : '');
     }
 
-    // Tooltip on hover/touch
+    // ── Tooltip ──
     function getHoveredBar(mx) {
       for (let i = 0; i < 4; i++) {
         const x = padL + i * (barW + barGap);
@@ -1329,7 +1395,6 @@
       }
       return -1;
     }
-
     const tooltipEl = document.getElementById('chart-tooltip');
     const periodLabels = ['hoje', 'esta semana', 'este mês', `em ${new Date().getFullYear()}`];
 
@@ -1337,19 +1402,25 @@
       const rect = canvas.getBoundingClientRect();
       const relX = mx - rect.left;
       const relY = my - rect.top;
-      const idx = getHoveredBar(relX);
+      const idx  = getHoveredBar(relX);
       if (idx < 0 || relY > H - padB + 8) { tooltipEl.classList.remove('visible'); return; }
-      const val = values[idx];
-      tooltipEl.innerHTML = `<strong>${val.toLocaleString('pt-BR')} págs</strong>${labels[idx]} — ${periodLabels[idx]}`;
+      const val  = values[idx];
+      const recV = recValues[idx];
+      const isRec = recV > 0 && val >= recV;
+      const diff  = recV > 0 ? val - recV : null;
+      let extra = '';
+      if (isRec)       extra = ` <span style="color:${GOLD}">🏆 recorde!</span>`;
+      else if (diff !== null && diff < 0) extra = ` <span style="opacity:.7">faltam ${Math.abs(diff).toLocaleString('pt-BR')} pgs pro recorde (${recV.toLocaleString('pt-BR')})</span>`;
+      tooltipEl.innerHTML = `<strong>${val.toLocaleString('pt-BR')} págs</strong>${labels[idx]} — ${periodLabels[idx]}${extra}`;
       const tipX = padL + idx * (barW + barGap) + barW / 2;
       const barH = val > 0 ? Math.max(4, (val / maxVal) * chartH) : 0;
       const tipY = padT + chartH - barH - 8;
-      tooltipEl.style.left = Math.min(tipX - 60, W - 170) + 'px';
-      tooltipEl.style.top  = Math.max(0, tipY - 50) + 'px';
+      tooltipEl.style.left = Math.min(tipX - 60, W - 200) + 'px';
+      tooltipEl.style.top  = Math.max(0, tipY - 52) + 'px';
       tooltipEl.classList.add('visible');
     }
 
-    canvas.onmousemove = e => showTooltip(e.clientX, e.clientY);
+    canvas.onmousemove  = e => showTooltip(e.clientX, e.clientY);
     canvas.onmouseleave = () => tooltipEl.classList.remove('visible');
     canvas.ontouchmove  = e => { e.preventDefault(); const t = e.touches[0]; showTooltip(t.clientX, t.clientY); };
     canvas.ontouchend   = () => setTimeout(() => tooltipEl.classList.remove('visible'), 1500);
