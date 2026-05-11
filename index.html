@@ -880,22 +880,20 @@
   .radio-opt input[type=radio] { display: none; }
 
   /* ── Progress inline card ── */
-  .progress-mode-toggle {
-    display: flex; gap: 6px; margin-bottom: 6px;
+  .btn-mode-toggle {
+    background: none; border: none; cursor: pointer;
+    font-size: 13px; padding: 0 2px; opacity: .45;
+    transition: opacity .2s; line-height: 1; margin-left: 4px;
+    vertical-align: middle;
   }
-  .prog-mode-btn {
-    font-size: 10px; padding: 3px 9px; border-radius: 50px;
-    border: 1px solid var(--border); background: var(--cream);
-    color: var(--text-dim); cursor: pointer; transition: all .15s;
-  }
-  .prog-mode-btn.active {
-    border-color: var(--accent); background: rgba(122,162,247,.12); color: var(--accent);
-  }
+  .btn-mode-toggle:hover { opacity: 1; }
+  .btn-mode-toggle.pag-ativo { opacity: 1; color: var(--blue-tn); }
+
   .page-input-wrap {
-    display: flex; align-items: center; gap: 6px;
+    display: flex; align-items: center; gap: 6px; margin-top: 4px;
   }
   .page-input-wrap input {
-    width: 72px; padding: 5px 8px;
+    width: 68px; padding: 4px 8px;
     background: var(--cream); border: 1px solid var(--border);
     border-radius: var(--radius); color: var(--text);
     font-size: 14px; text-align: center;
@@ -2048,28 +2046,28 @@
             </div>
             ${b.status !== 'Concluído' ? (() => {
               const hasPags = !!(parseInt(b.paginas) > 0);
-              const modoPag = b.modoProg === 'pag';
+              const modoPag = b.modoProg === 'pag' && hasPags;
               const paginaAtual = Math.round((pct/100)*(parseInt(b.paginas)||0));
               return `<div class="quick-progress">
-                ${hasPags ? `<div class="progress-mode-toggle">
-                  <button class="prog-mode-btn ${!modoPag ? 'active' : ''}"
-                    onclick="setCardMode('${b.id}','pct')">% concluído</button>
-                  <button class="prog-mode-btn ${modoPag ? 'active' : ''}"
-                    onclick="setCardMode('${b.id}','pag')">Nº da página</button>
-                </div>` : ''}
-                <div class="page-input-wrap" id="wrap-pag-${b.id}" style="display:${modoPag && hasPags ? 'flex' : 'none'}">
-                  <input type="number" min="0" max="${b.paginas||99999}" id="pagina-atual-${b.id}"
-                    value="${paginaAtual}"
-                    oninput="syncPageToPctCard('${b.id}',${b.paginas||0})" />
-                  <span class="page-total">de ${b.paginas} págs</span>
-                  <span class="pct-badge" id="pct-${b.id}">${pct}%</span>
+                <div style="display:flex;align-items:center;gap:8px">
+                  ${modoPag ? `
+                  <div class="page-input-wrap" id="wrap-pag-${b.id}">
+                    <input type="number" min="0" max="${b.paginas||99999}" id="pagina-atual-${b.id}"
+                      value="${paginaAtual}"
+                      oninput="syncPageToPctCard('${b.id}',${b.paginas||0})" />
+                    <span class="page-total">de ${b.paginas} págs</span>
+                    <span class="pct-badge" id="pct-${b.id}">${pct}%</span>
+                  </div>` : `
+                  <div style="display:flex;align-items:center;gap:8px;flex:1" id="wrap-pct-${b.id}">
+                    <input type="range" min="0" max="100" step="1" value="${pct}" id="slider-${b.id}"
+                      oninput="document.getElementById('pct-${b.id}').textContent=this.value+'%';syncSliderToPage('${b.id}',${b.paginas||0})" />
+                    <span class="pct-badge" id="pct-${b.id}">${pct}%</span>
+                  </div>`}
+                  ${hasPags ? `<button class="btn-mode-toggle ${modoPag ? 'pag-ativo' : ''}"
+                    onclick="setCardMode('${b.id}','${modoPag ? 'pct' : 'pag'}')"
+                    title="${modoPag ? 'Mudar para % concluído' : 'Mudar para nº da página'}">📖</button>` : ''}
+                  <button class="btn-save-pct" onclick="saveProgress('${b.id}', '${esc(b.titulo)}')">Salvar</button>
                 </div>
-                <div style="display:${!modoPag || !hasPags ? 'flex' : 'none'};align-items:center;gap:8px" id="wrap-pct-${b.id}">
-                  <input type="range" min="0" max="100" step="1" value="${pct}" id="slider-${b.id}"
-                    oninput="document.getElementById('pct-${b.id}').textContent=this.value+'%';syncSliderToPage('${b.id}',${b.paginas||0})" />
-                  <span class="pct-badge" id="pct-${b.id}">${pct}%</span>
-                </div>
-                <button class="btn-save-pct" onclick="saveProgress('${b.id}', '${esc(b.titulo)}')">Salvar</button>
               </div>`;
             })() : ''}
             ${b.status === 'Lendo' ? (() => {
