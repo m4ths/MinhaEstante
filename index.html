@@ -20,6 +20,8 @@
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, collection, doc, getDocs, addDoc, updateDoc, deleteDoc, setDoc, query, orderBy, serverTimestamp }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   // ─────────────────────────────────────────────────────────────────
   //  🔧 SUBSTITUA pelos valores do seu projeto no Firebase Console
@@ -36,16 +38,31 @@
 
   const app      = initializeApp(firebaseConfig);
   const auth     = getAuth(app);
+  const db       = getFirestore(app);
   const provider = new GoogleAuthProvider();
 
-  // Expõe funções para o script principal
+  // Expõe funções e db para o script principal
   window._fbSignIn  = () => signInWithPopup(auth, provider);
   window._fbSignOut = () => signOut(auth);
+  window._fbDb      = db;
+
+  // Helpers Firestore expostos globalmente
+  window._fbCollection  = collection;
+  window._fbDoc         = doc;
+  window._fbGetDocs     = getDocs;
+  window._fbAddDoc      = addDoc;
+  window._fbUpdateDoc   = updateDoc;
+  window._fbDeleteDoc   = deleteDoc;
+  window._fbSetDoc      = setDoc;
+  window._fbQuery       = query;
+  window._fbOrderBy     = orderBy;
+  window._fbServerTs    = serverTimestamp;
 
   onAuthStateChanged(auth, user => {
     const authScreen = document.getElementById('auth-screen');
     const appWrapper = document.getElementById('app-wrapper');
     if (user) {
+      window._fbUid = user.uid;
       authScreen.style.display = 'none';
       appWrapper.style.display = 'block';
       // Chip do usuário
@@ -840,6 +857,44 @@
   .user-menu-item:hover { background: var(--cream); }
   .user-menu-item.danger { color: var(--accent); }
 
+
+  /* ── Modo de progresso (modal) ── */
+  .radio-opt {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: var(--radius);
+    border: 1px solid var(--border); background: var(--cream);
+    cursor: pointer; font-size: 13px; color: var(--text);
+    transition: all .15s; flex: 1; justify-content: center;
+  }
+  .radio-opt:has(input:checked) {
+    border-color: var(--accent); background: rgba(122,162,247,.12); color: var(--accent);
+  }
+  .radio-opt input[type=radio] { display: none; }
+
+  /* ── Progress inline card ── */
+  .progress-mode-toggle {
+    display: flex; gap: 6px; margin-bottom: 6px;
+  }
+  .prog-mode-btn {
+    font-size: 10px; padding: 3px 9px; border-radius: 50px;
+    border: 1px solid var(--border); background: var(--cream);
+    color: var(--text-dim); cursor: pointer; transition: all .15s;
+  }
+  .prog-mode-btn.active {
+    border-color: var(--accent); background: rgba(122,162,247,.12); color: var(--accent);
+  }
+  .page-input-wrap {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .page-input-wrap input {
+    width: 72px; padding: 5px 8px;
+    background: var(--cream); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text);
+    font-size: 14px; text-align: center;
+  }
+  .page-input-wrap input:focus { border-color: var(--accent); outline: none; }
+  .page-total { font-size: 12px; color: var(--text-dim); }
+
 </style>
 </head>
 <body>
@@ -1053,13 +1108,30 @@
           <option value="Pausado">Pausado</option>
         </select>
       </div>
+      <div class="field full" id="field-modo-progresso">
+        <label>Acompanhar progresso por</label>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <label class="radio-opt" id="radio-pct-label">
+            <input type="radio" name="modo-prog" id="modo-pct" value="pct" checked onchange="onModoProgresso()"> % concluído
+          </label>
+          <label class="radio-opt" id="radio-pag-label">
+            <input type="radio" name="modo-prog" id="modo-pag" value="pag" onchange="onModoProgresso()"> Nº da página
+          </label>
+        </div>
+      </div>
       <div class="field" id="field-progresso-pct">
         <label>Progresso (%)</label>
-        <input type="number" id="f-progresso" placeholder="0" min="0" max="100" />
+        <input type="number" id="f-progresso" placeholder="0" min="0" max="100"
+          oninput="syncPctToPage()" />
       </div>
       <div class="field" id="field-pagina-atual" style="display:none">
         <label>Página atual</label>
-        <input type="number" id="f-pagina-atual" placeholder="0" min="0" />
+        <input type="number" id="f-pagina-atual" placeholder="0" min="0"
+          oninput="syncPageToPct()" />
+      </div>
+      <div class="field" id="field-pct-calculado" style="display:none">
+        <label style="color:var(--text-dim)">Progresso calculado</label>
+        <div id="pct-calculado-display" style="font-size:20px;font-weight:600;color:var(--accent);padding:6px 0">0%</div>
       </div>
       <div class="field">
         <label>Data de início</label>
@@ -1143,11 +1215,10 @@
     if (diff <= 0) return 0;
     const pages = Math.round((diff / 100) * totalPages);
     if (pages <= 0) return 0;
-    await api({
-      action: 'logPages',
+    await dbLogPages({
       date: todayStr(),
       pages,
-      bookId: book.id,
+      bookId: String(book.id),
       bookTitle: book.titulo
     });
     return pages;
@@ -1177,7 +1248,7 @@
     document.getElementById('pages-number').textContent = '…';
 
     try {
-      const data    = await api({ action: 'getPages', period: currentPagesTab });
+      const data    = await dbGetPages(currentPagesTab);
       const entries = data.entries || [];
       const total   = entries.reduce((s, e) => s + (parseInt(e.pages) || 0), 0);
       document.getElementById('pages-number').textContent = total.toLocaleString('pt-BR');
@@ -1210,7 +1281,7 @@
     const missing = periods.filter(p => pagesTotals[p] === 0 && p !== currentPagesTab);
     try {
       await Promise.all(missing.map(async p => {
-        const d = await api({ action: 'getPages', period: p });
+        const d = await dbGetPages(p);
         pagesTotals[p] = (d.entries || []).reduce((s, e) => s + (parseInt(e.pages) || 0), 0);
       }));
     } catch(_) {}
@@ -1246,7 +1317,7 @@
     grid.innerHTML = '<div style="color:var(--text-dim);font-size:12px;grid-column:1/-1;padding:8px 0">Calculando recordes…</div>';
     try {
       if (!allEntriesCache) {
-        const d = await api({ action: 'getPages', period: 'total' });
+        const d = await dbGetPages('total');
         allEntriesCache = d.entries || [];
       }
       const entries = allEntriesCache;
@@ -1684,8 +1755,34 @@
     loadBooks();
   }
 
+  // ─────────────────────────────────────────────────────────────────
+  //  CAMADA DE DADOS — Firestore (principal) + Sheets (fallback)
+  //  Cache localStorage para carregamento instantâneo
+  // ─────────────────────────────────────────────────────────────────
+  const BOOKS_CACHE_KEY = 'me_books_cache';
+  const PAGES_CACHE_KEY = 'me_pages_cache';
+
+  function useFirestore() { return !!(window._fbDb && window._fbUid); }
+
+  // ── Helpers Firestore ──
+  function livrosRef()   { return window._fbCollection(window._fbDb, 'users', window._fbUid, 'livros'); }
+  function pagesRef()    { return window._fbCollection(window._fbDb, 'users', window._fbUid, 'paginasLog'); }
+
+  // ── Cache helpers ──
+  function saveCache(key, data) {
+    try { localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data })); } catch(_) {}
+  }
+  function loadCache(key) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      return JSON.parse(raw).data;
+    } catch(_) { return null; }
+  }
+
+  // ── Fallback Sheets ──
   async function api(params) {
-    if (!apiUrl) { toast('Configure a URL do Apps Script primeiro.', true); return; }
+    if (!apiUrl) return null;
     const url = apiUrl + '?' + new URLSearchParams(params);
     const res  = await fetch(url);
     const data = await res.json();
@@ -1693,16 +1790,139 @@
     return data;
   }
 
+  // ── LOAD BOOKS — cache-first, depois Firestore em background ──
   async function loadBooks() {
-    try {
-      const [booksData, pagesData] = await Promise.all([
-        api({ action: 'getAll' }),
-        api({ action: 'getPages', period: 'total' })
-      ]);
-      books = booksData.books || [];
-      computeAvgPagesPerDay(pagesData.entries || []);
+    // 1. Mostra cache imediatamente
+    const cached = loadCache(BOOKS_CACHE_KEY);
+    const cachedPages = loadCache(PAGES_CACHE_KEY);
+    if (cached) {
+      books = cached;
+      if (cachedPages) computeAvgPagesPerDay(cachedPages);
       render();
-    } catch (e) { toast('Erro ao carregar: ' + e.message, true); }
+    }
+
+    // 2. Busca dados reais em background
+    try {
+      if (useFirestore()) {
+        await loadBooksFromFirestore();
+      } else if (apiUrl) {
+        await loadBooksFromSheets();
+      }
+    } catch(e) {
+      if (!cached) toast('Erro ao carregar: ' + e.message, true);
+    }
+  }
+
+  async function loadBooksFromFirestore() {
+    const snap = await window._fbGetDocs(livrosRef());
+    books = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    saveCache(BOOKS_CACHE_KEY, books);
+
+    // Páginas
+    const pSnap = await window._fbGetDocs(pagesRef());
+    const entries = pSnap.docs.map(d => d.data());
+    saveCache(PAGES_CACHE_KEY, entries);
+    computeAvgPagesPerDay(entries);
+    allEntriesCache = entries;
+    render();
+  }
+
+  async function loadBooksFromSheets() {
+    const [booksData, pagesData] = await Promise.all([
+      api({ action: 'getAll' }),
+      api({ action: 'getPages', period: 'total' })
+    ]);
+    books = booksData.books || [];
+    const entries = pagesData.entries || [];
+    saveCache(BOOKS_CACHE_KEY, books);
+    saveCache(PAGES_CACHE_KEY, entries);
+    computeAvgPagesPerDay(entries);
+    render();
+  }
+
+  // ── ADD BOOK ──
+  async function dbAddBook(book) {
+    if (useFirestore()) {
+      const docRef = await window._fbAddDoc(livrosRef(), { ...book, criadoEm: window._fbServerTs() });
+      return { id: docRef.id };
+    } else {
+      return await api({ action: 'add', ...book });
+    }
+  }
+
+  // ── UPDATE BOOK ──
+  async function dbUpdateBook(id, book) {
+    if (useFirestore()) {
+      const ref = window._fbDoc(window._fbDb, 'users', window._fbUid, 'livros', id);
+      await window._fbUpdateDoc(ref, { ...book, atualizadoEm: window._fbServerTs() });
+    } else {
+      await api({ action: 'update', id, ...book });
+    }
+  }
+
+  // ── DELETE BOOK ──
+  async function dbDeleteBook(id) {
+    if (useFirestore()) {
+      const ref = window._fbDoc(window._fbDb, 'users', window._fbUid, 'livros', id);
+      await window._fbDeleteDoc(ref);
+    } else {
+      await api({ action: 'delete', id });
+    }
+  }
+
+  // ── LOG PAGES ──
+  async function dbLogPages(entry) {
+    if (useFirestore()) {
+      await window._fbAddDoc(pagesRef(), { ...entry, criadoEm: window._fbServerTs() });
+    } else {
+      await api({ action: 'logPages', ...entry });
+    }
+    // Invalida cache de páginas
+    allEntriesCache = null;
+    localStorage.removeItem(PAGES_CACHE_KEY);
+  }
+
+  // ── GET PAGES (com cache) ──
+  async function dbGetPages(period) {
+    let entries = allEntriesCache;
+
+    if (!entries) {
+      // tenta cache
+      entries = loadCache(PAGES_CACHE_KEY);
+      if (!entries) {
+        // busca remoto
+        if (useFirestore()) {
+          const snap = await window._fbGetDocs(pagesRef());
+          entries = snap.docs.map(d => d.data());
+          saveCache(PAGES_CACHE_KEY, entries);
+        } else if (apiUrl) {
+          const d = await api({ action: 'getPages', period: 'total' });
+          entries = d.entries || [];
+          saveCache(PAGES_CACHE_KEY, entries);
+        } else {
+          entries = [];
+        }
+      }
+      allEntriesCache = entries;
+    }
+
+    // Filtra localmente — muito mais rápido que chamar o servidor
+    const today    = todayStr();
+    const wkStart  = getWeekStart();
+    const moStart  = today.slice(0,7) + '-01';
+    const yrStart  = today.slice(0,4) + '-01-01';
+
+    const filtered = entries.filter(e => {
+      const d = e.date || (e.Data ? String(e.Data).slice(0,10) : '');
+      if (!d) return false;
+      if (period === 'hoje')   return d === today;
+      if (period === 'semana') return d >= wkStart  && d <= today;
+      if (period === 'mes')    return d >= moStart  && d <= today;
+      if (period === 'ano')    return d >= yrStart  && d <= today;
+      return true;
+    });
+
+    return { entries: filtered };
   }
 
   function computeAvgPagesPerDay(entries) {
@@ -1814,25 +2034,36 @@
           </div>
           <div class="progress-wrap">
             <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${barColor}"></div></div>
-            <div class="progress-label"><span>${pct}% lido</span><span>${pct === 100 ? '✓ Concluído' : ''}</span></div>
-            ${b.tipo === 'Físico' && b.paginas ? `
-            <div class="quick-progress">
-              <label>Página atual</label>
-              <input type="number" min="0" max="${b.paginas}" id="pagina-atual-${b.id}"
-                value="${Math.round((pct/100)*parseInt(b.paginas))}"
-                style="width:80px;padding:5px 8px;background:var(--cream);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:14px;text-align:center;"
-                oninput="syncSliderFromPage(${b.id}, ${b.paginas})" />
-              <span style="font-size:12px;color:var(--text-dim)">de ${b.paginas}</span>
-              <span class="pct-badge" id="pct-${b.id}">${pct}%</span>
-              <button class="btn-save-pct" onclick="saveProgress(${b.id}, '${esc(b.titulo)}')">Salvar</button>
-            </div>` : `
-            <div class="quick-progress">
-              <label>Progresso</label>
-              <input type="range" min="0" max="100" step="1" value="${pct}" id="slider-${b.id}"
-                oninput="document.getElementById('pct-${b.id}').textContent=this.value+'%'" />
-              <span class="pct-badge" id="pct-${b.id}">${pct}%</span>
-              <button class="btn-save-pct" onclick="saveProgress(${b.id}, '${esc(b.titulo)}')">Salvar</button>
-            </div>`}
+            <div class="progress-label">
+              <span>${pct}% lido${b.paginas && pct > 0 ? ` · ${Math.round((pct/100)*parseInt(b.paginas))} de ${b.paginas} págs` : ''}</span>
+              <span>${pct === 100 ? '✓ Concluído' : ''}</span>
+            </div>
+            ${b.status !== 'Concluído' ? (() => {
+              const hasPags = !!(parseInt(b.paginas) > 0);
+              const modoPag = b.modoProg === 'pag';
+              const paginaAtual = Math.round((pct/100)*(parseInt(b.paginas)||0));
+              return `<div class="quick-progress">
+                ${hasPags ? `<div class="progress-mode-toggle">
+                  <button class="prog-mode-btn ${!modoPag ? 'active' : ''}"
+                    onclick="setCardMode('${b.id}','pct')">% concluído</button>
+                  <button class="prog-mode-btn ${modoPag ? 'active' : ''}"
+                    onclick="setCardMode('${b.id}','pag')">Nº da página</button>
+                </div>` : ''}
+                <div class="page-input-wrap" id="wrap-pag-${b.id}" style="display:${modoPag && hasPags ? 'flex' : 'none'}">
+                  <input type="number" min="0" max="${b.paginas||99999}" id="pagina-atual-${b.id}"
+                    value="${paginaAtual}"
+                    oninput="syncPageToPctCard('${b.id}',${b.paginas||0})" />
+                  <span class="page-total">de ${b.paginas} págs</span>
+                  <span class="pct-badge" id="pct-${b.id}">${pct}%</span>
+                </div>
+                <div style="display:${!modoPag || !hasPags ? 'flex' : 'none'};align-items:center;gap:8px" id="wrap-pct-${b.id}">
+                  <input type="range" min="0" max="100" step="1" value="${pct}" id="slider-${b.id}"
+                    oninput="document.getElementById('pct-${b.id}').textContent=this.value+'%';syncSliderToPage('${b.id}',${b.paginas||0})" />
+                  <span class="pct-badge" id="pct-${b.id}">${pct}%</span>
+                </div>
+                <button class="btn-save-pct" onclick="saveProgress('${b.id}', '${esc(b.titulo)}')">Salvar</button>
+              </div>`;
+            })() : ''}
             ${b.status === 'Lendo' ? (() => {
               const est = estimateFinish(b);
               if (!est) return '';
@@ -1868,10 +2099,75 @@
     return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
+  // ── Modal: modo de progresso ──
   function onTipoChange() {
-    const tipo = document.getElementById('f-tipo').value;
-    document.getElementById('field-progresso-pct').style.display = tipo === 'Físico' ? 'none' : '';
-    document.getElementById('field-pagina-atual').style.display  = tipo === 'Físico' ? '' : 'none';
+    // mantido para compatibilidade, chama onModoProgresso
+    onModoProgresso();
+  }
+
+  function onModoProgresso() {
+    const modo = document.querySelector('input[name="modo-prog"]:checked')?.value || 'pct';
+    document.getElementById('field-progresso-pct').style.display  = modo === 'pct' ? '' : 'none';
+    document.getElementById('field-pagina-atual').style.display   = modo === 'pag' ? '' : 'none';
+    document.getElementById('field-pct-calculado').style.display  = modo === 'pag' ? '' : 'none';
+  }
+
+  function syncPctToPage() {
+    const pct   = parseInt(document.getElementById('f-progresso').value) || 0;
+    const total = parseInt(document.getElementById('f-paginas').value)   || 0;
+    if (total > 0) {
+      document.getElementById('f-pagina-atual').value = Math.round((pct / 100) * total);
+    }
+  }
+
+  function syncPageToPct() {
+    const page  = parseInt(document.getElementById('f-pagina-atual').value) || 0;
+    const total = parseInt(document.getElementById('f-paginas').value)      || 0;
+    if (total > 0) {
+      const pct = Math.min(100, Math.round((page / total) * 100));
+      document.getElementById('f-progresso').value = pct;
+      document.getElementById('pct-calculado-display').textContent = pct + '%';
+    }
+  }
+
+  // ── Card: toggle de modo por livro ──
+  function setCardMode(id, modo) {
+    // Salva preferência do modo no objeto do livro (local)
+    const book = books.find(b => String(b.id) === String(id));
+    if (book) book.modoProg = modo;
+    const wrapPag = document.getElementById('wrap-pag-' + id);
+    const wrapPct = document.getElementById('wrap-pct-' + id);
+    const btns    = document.querySelectorAll(`#card-${id} .prog-mode-btn`);
+    if (wrapPag) wrapPag.style.display = modo === 'pag' ? 'flex' : 'none';
+    if (wrapPct) wrapPct.style.display = modo === 'pct' ? 'flex' : 'none';
+    document.querySelectorAll('[onclick*="setCardMode(\''+id+"\',\'pag\')"], [onclick*="setCardMode('"+id+"','pag')"]").forEach(b => b.classList.toggle('active', modo==='pag'));
+    document.querySelectorAll('[onclick*="setCardMode(\''+id+"\',\'pct\')"], [onclick*="setCardMode('"+id+"','pct')"]").forEach(b => b.classList.toggle('active', modo==='pct'));
+    // Re-render só o card afetado para evitar piscar
+    render();
+  }
+
+  // ── Card: sync slider → página ──
+  function syncSliderToPage(id, total) {
+    const slider = document.getElementById('slider-' + id);
+    const pageEl = document.getElementById('pagina-atual-' + id);
+    if (!slider || !pageEl || !total) return;
+    pageEl.value = Math.round((slider.value / 100) * total);
+  }
+
+  // ── Card: sync página → % ──
+  function syncPageToPctCard(id, total) {
+    const pageEl  = document.getElementById('pagina-atual-' + id);
+    const pctEl   = document.getElementById('pct-' + id);
+    const slider  = document.getElementById('slider-' + id);
+    const book    = books.find(b => String(b.id) === String(id));
+    if (!pageEl || !total) return;
+    const page = parseInt(pageEl.value) || 0;
+    const pct  = Math.min(100, Math.round((page / total) * 100));
+    if (pctEl)  pctEl.textContent  = pct + '%';
+    if (slider) slider.value       = pct;
+    if (book)   book._tempPct      = pct;
+    // salva dataset para saveProgress ler
+    pageEl.dataset.pct = pct;
   }
 
   function syncSliderFromPage(id, totalPages) {
@@ -1889,6 +2185,8 @@
     document.getElementById('modal-title').textContent = 'Adicionar livro';
     ['titulo','autor','edicao','paginas','progresso','inicio','fim'].forEach(f => document.getElementById('f-'+f).value = '');
     document.getElementById('f-pagina-atual').value = '';
+    document.getElementById('modo-pct').checked = true;
+    onModoProgresso();
     document.getElementById('f-tipo').value = 'Ebook';
     onTipoChange();
     document.getElementById('f-status').value = 'Lendo';
@@ -1907,7 +2205,11 @@
     document.getElementById('f-tipo').value      = book.tipo || 'Ebook';
     onTipoChange();
     if (book.tipo === 'Físico' && book.paginas) {
-      document.getElementById('f-pagina-atual').value = Math.round(((parseInt(book.progresso)||0)/100)*parseInt(book.paginas));
+      const modoProg = book.modoProg || (book.tipo === 'Físico' ? 'pag' : 'pct');
+      document.querySelector(`input[name="modo-prog"][value="${modoProg}"]`).checked = true;
+      onModoProgresso();
+      document.getElementById('f-pagina-atual').value = Math.round(((parseInt(book.progresso)||0)/100)*(parseInt(book.paginas)||0));
+      document.getElementById('pct-calculado-display').textContent = (parseInt(book.progresso)||0) + '%';
     }
     document.getElementById('f-inicio').value    = toInputDate(book.inicio);
     document.getElementById('f-fim').value       = toInputDate(book.fim);
@@ -1930,17 +2232,22 @@
     const titulo = document.getElementById('f-titulo').value.trim();
     if (!titulo) return toast('Título é obrigatório.', true);
     const tipo = document.getElementById('f-tipo').value;
+    const modo = document.querySelector('input[name="modo-prog"]:checked')?.value || 'pct';
     let progresso = document.getElementById('f-progresso').value.trim() || '0';
-    if (tipo === 'Físico') {
+    let paginaAtualSalva = '';
+    if (modo === 'pag') {
       const paginaAtual = parseInt(document.getElementById('f-pagina-atual').value) || 0;
       const totalPags   = parseInt(document.getElementById('f-paginas').value) || 0;
       progresso = totalPags > 0 ? String(Math.min(100, Math.round((paginaAtual / totalPags) * 100))) : '0';
+      paginaAtualSalva = String(paginaAtual);
     }
     const book = {
       titulo, autor: document.getElementById('f-autor').value.trim(), tipo,
       edicao: document.getElementById('f-edicao').value.trim(),
       paginas: document.getElementById('f-paginas').value.trim(),
       progresso,
+      modoProg: modo,
+      paginaAtual: paginaAtualSalva,
       status: document.getElementById('f-status').value,
       inicio: document.getElementById('f-inicio').value ? fmtDate(document.getElementById('f-inicio').value) : '',
       fim:    document.getElementById('f-fim').value    ? fmtDate(document.getElementById('f-fim').value)    : ''
@@ -1949,13 +2256,15 @@
     btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Salvando...';
     try {
       if (editingId) {
-        await api({ action: 'update', id: editingId, ...book });
+        await dbUpdateBook(editingId, book);
         const idx = books.findIndex(b => b.id === editingId);
         if (idx !== -1) books[idx] = { ...book, id: editingId };
+        saveCache(BOOKS_CACHE_KEY, books);
         toast('Livro atualizado!');
       } else {
-        const res = await api({ action: 'add', ...book });
+        const res = await dbAddBook(book);
         books.push({ ...book, id: res.id });
+        saveCache(BOOKS_CACHE_KEY, books);
         toast('Livro adicionado!');
       }
       closeModal(); render();
@@ -1976,9 +2285,11 @@
     if (!book) return;
     const oldPct = parseInt(book.progresso) || 0;
     try {
-      await api({ action: 'update', id, ...book, progresso: newPct });
+      await dbUpdateBook(id, { ...book, progresso: newPct });
       const pagesAdded = await registerPagesFromProgress(book, oldPct, newPct);
-      book.progresso = newPct; render();
+      book.progresso = newPct;
+      saveCache(BOOKS_CACHE_KEY, books);
+      render();
       if (pagesAdded > 0) {
         toast(`Progresso salvo! +${pagesAdded} páginas registradas.`);
       } else {
@@ -1990,8 +2301,10 @@
   async function deleteBook(id) {
     if (!confirm('Remover este livro?')) return;
     try {
-      await api({ action: 'delete', id });
-      books = books.filter(b => b.id !== id); render();
+      await dbDeleteBook(id);
+      books = books.filter(b => b.id !== id);
+      saveCache(BOOKS_CACHE_KEY, books);
+      render();
       toast('Livro removido.');
     } catch (e) { toast('Erro ao remover: ' + e.message, true); }
   }
@@ -2026,11 +2339,12 @@
     if (apiUrl) {
       document.getElementById('api-url-input').value = apiUrl;
       document.getElementById('setup-banner').style.display = 'none';
-      loadBooks();
     } else {
-      document.getElementById('setup-banner').style.display = '';
-      renderPages();
+      document.getElementById('setup-banner').style.display = 'none'; // Firestore não precisa de URL
     }
+    // Sempre carrega — Firestore não precisa de URL
+    loadBooks();
+    renderPages();
   };
 </script>
 </div><!-- /app-wrapper -->
