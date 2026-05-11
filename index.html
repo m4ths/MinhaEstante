@@ -880,14 +880,14 @@
   .radio-opt input[type=radio] { display: none; }
 
   /* ── Progress inline card ── */
-  .btn-mode-toggle {
+  .btn-link-mode {
     background: none; border: none; cursor: pointer;
-    font-size: 13px; padding: 0 2px; opacity: .45;
-    transition: opacity .2s; line-height: 1; margin-left: 4px;
-    vertical-align: middle;
+    font-size: 11px; color: var(--text-dim); padding: 0;
+    margin-top: 6px; display: block;
+    transition: color .15s; text-decoration: underline;
+    text-underline-offset: 2px;
   }
-  .btn-mode-toggle:hover { opacity: 1; }
-  .btn-mode-toggle.pag-ativo { opacity: 1; color: var(--blue-tn); }
+  .btn-link-mode:hover { color: var(--accent); }
 
   .page-input-wrap {
     display: flex; align-items: center; gap: 6px; margin-top: 4px;
@@ -2049,24 +2049,24 @@
               const modoPag = b.modoProg === 'pag' && hasPags;
               const paginaAtual = Math.round((pct/100)*(parseInt(b.paginas)||0));
               return `<div class="quick-progress">
-                <div style="display:flex;align-items:center;gap:8px">
-                  ${modoPag ? `
-                  <div class="page-input-wrap" id="wrap-pag-${b.id}">
-                    <input type="number" min="0" max="${b.paginas||99999}" id="pagina-atual-${b.id}"
-                      value="${paginaAtual}"
-                      oninput="syncPageToPctCard('${b.id}',${b.paginas||0})" />
-                    <span class="page-total">de ${b.paginas} págs</span>
-                  </div>` : `
-                  <div style="display:flex;align-items:center;gap:8px;flex:1" id="wrap-pct-${b.id}">
-                    <input type="range" min="0" max="100" step="1" value="${pct}" id="slider-${b.id}"
-                      oninput="document.getElementById('pct-${b.id}').textContent=this.value+'%';syncSliderToPage('${b.id}',${b.paginas||0})" />
-                    <span class="pct-badge" id="pct-${b.id}">${pct}%</span>
-                  </div>`}
-                  ${hasPags ? `<button class="btn-mode-toggle ${modoPag ? 'pag-ativo' : ''}"
-                    onclick="setCardMode('${b.id}','${modoPag ? 'pct' : 'pag'}')"
-                    title="${modoPag ? 'Mudar para % concluído' : 'Mudar para nº da página'}">📖</button>` : ''}
-                  <button class="btn-save-pct" onclick="saveProgress('${b.id}', '${esc(b.titulo)}')">Salvar</button>
+                ${modoPag ? `
+                <div class="page-input-wrap">
+                  <input type="number" min="0" max="${b.paginas||99999}" id="pagina-atual-${b.id}"
+                    value="${paginaAtual}"
+                    oninput="syncPageToPctCard('${b.id}',${b.paginas||0})" />
+                  <span class="page-total">de ${b.paginas} págs</span>
+                  <button class="btn-save-pct" onclick="saveProgress('${b.id}','${esc(b.titulo)}')">Salvar</button>
                 </div>
+                <button class="btn-link-mode" onclick="setCardMode('${b.id}','pct')">← voltar para %</button>
+                ` : `
+                <div style="display:flex;align-items:center;gap:8px">
+                  <input type="range" min="0" max="100" step="1" value="${pct}" id="slider-${b.id}"
+                    oninput="document.getElementById('pct-${b.id}').textContent=this.value+'%'" />
+                  <span class="pct-badge" id="pct-${b.id}">${pct}%</span>
+                  <button class="btn-save-pct" onclick="saveProgress('${b.id}','${esc(b.titulo)}')">Salvar</button>
+                </div>
+                ${hasPags ? `<button class="btn-link-mode" onclick="setCardMode('${b.id}','pag')">📖 atualizar por página</button>` : ''}
+                `}
               </div>`;
             })() : ''}
             ${b.status === 'Lendo' ? (() => {
