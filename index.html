@@ -71,8 +71,16 @@
       if (av) av.src = user.photoURL || '';
       if (nm) nm.textContent = (user.displayName || 'Você').split(' ')[0];
       document.getElementById('user-chip').style.display = 'flex';
-      // Inicia o app
-      if (typeof window._appInit === 'function') window._appInit();
+      // Aguarda o script principal terminar de definir _appInit
+      // (módulos ES carregam em paralelo com scripts normais)
+      function tentarInit(tentativas) {
+        if (typeof window._appInit === 'function') {
+          window._appInit();
+        } else if (tentativas > 0) {
+          setTimeout(() => tentarInit(tentativas - 1), 100);
+        }
+      }
+      tentarInit(30); // tenta por até 3 segundos
     } else {
       authScreen.style.display = 'flex';
       appWrapper.style.display = 'none';
@@ -955,7 +963,7 @@
   </button>
 </nav>
 
-<div id="setup-banner">
+<div id="setup-banner" style="display:none">
   <p>🔗 URL do seu Apps Script:</p>
   <input type="text" id="api-url-input" placeholder="Cole aqui a URL do Web App (Apps Script)" />
   <button class="btn-sm" onclick="saveApiUrl()">Salvar</button>
