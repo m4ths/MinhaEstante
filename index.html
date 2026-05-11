@@ -2140,17 +2140,8 @@
 
   // ── Card: toggle de modo por livro ──
   function setCardMode(id, modo) {
-    // Salva preferência do modo no objeto do livro (local)
     const book = books.find(b => String(b.id) === String(id));
     if (book) book.modoProg = modo;
-    const wrapPag = document.getElementById('wrap-pag-' + id);
-    const wrapPct = document.getElementById('wrap-pct-' + id);
-    const btns    = document.querySelectorAll(`#card-${id} .prog-mode-btn`);
-    if (wrapPag) wrapPag.style.display = modo === 'pag' ? 'flex' : 'none';
-    if (wrapPct) wrapPct.style.display = modo === 'pct' ? 'flex' : 'none';
-    document.querySelectorAll('[onclick*="setCardMode(\''+id+"\',\'pag\')"], [onclick*="setCardMode('"+id+"','pag')"]").forEach(b => b.classList.toggle('active', modo==='pag'));
-    document.querySelectorAll('[onclick*="setCardMode(\''+id+"\',\'pct\')"], [onclick*="setCardMode('"+id+"','pct')"]").forEach(b => b.classList.toggle('active', modo==='pct'));
-    // Re-render só o card afetado para evitar piscar
     render();
   }
 
