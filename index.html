@@ -2056,7 +2056,6 @@
                       value="${paginaAtual}"
                       oninput="syncPageToPctCard('${b.id}',${b.paginas||0})" />
                     <span class="page-total">de ${b.paginas} págs</span>
-                    <span class="pct-badge" id="pct-${b.id}">${pct}%</span>
                   </div>` : `
                   <div style="display:flex;align-items:center;gap:8px;flex:1" id="wrap-pct-${b.id}">
                     <input type="range" min="0" max="100" step="1" value="${pct}" id="slider-${b.id}"
