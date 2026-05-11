@@ -1,4 +1,4 @@
-const CACHE = 'minha-estante-v1';
+const CACHE = 'minha-estante-v2';
 const STATIC = [
   './',
   './index.html',
@@ -26,25 +26,32 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// Estratégia: Network first para API do Apps Script, Cache first para estáticos
+// Estratégia: ignora Firebase/APIs externas, cache-first para estáticos
 self.addEventListener('fetch', e => {
   const url = e.request.url;
 
-  // Requisições para o Apps Script sempre vão para a rede (dados em tempo real)
-  if (url.includes('script.google.com')) {
-    e.respondWith(fetch(e.request).catch(() => new Response(
-      JSON.stringify({ error: 'Sem conexão' }),
-      { headers: { 'Content-Type': 'application/json' } }
-    )));
-    return;
-  }
+  // Ignora tudo que não é GET (Firebase usa POST internamente)
+  if (e.request.method !== 'GET') return;
+
+  // Ignora Firebase, Google APIs e CDNs externos
+  if (
+    url.includes('firestore.googleapis.com') ||
+    url.includes('firebase.googleapis.com') ||
+    url.includes('identitytoolkit.googleapis.com') ||
+    url.includes('securetoken.googleapis.com') ||
+    url.includes('gstatic.com/firebasejs') ||
+    url.includes('script.google.com')
+  ) return;
 
   // Para o resto: tenta rede, cai no cache se offline
   e.respondWith(
     fetch(e.request)
       .then(res => {
-        const clone = res.clone();
-        caches.open(CACHE).then(cache => cache.put(e.request, clone));
+        // Só faz cache de respostas válidas e de mesma origem ou CDNs seguros
+        if (res && res.status === 200) {
+          const clone = res.clone();
+          caches.open(CACHE).then(cache => cache.put(e.request, clone));
+        }
         return res;
       })
       .catch(() => caches.match(e.request))
