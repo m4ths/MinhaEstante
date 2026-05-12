@@ -484,19 +484,36 @@
 
   /* ── Stats ── */
   .stats {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    display: grid; grid-template-columns: 1fr 1fr;
     gap: 10px; margin-bottom: 1.5rem;
   }
   .stat {
     background: var(--card); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 1rem 1.25rem; text-align: center;
-    box-shadow: var(--shadow-card);
+    border-radius: 20px; padding: 1.1rem 1.25rem;
+    box-shadow: var(--shadow-card); position: relative; overflow: hidden;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .stat::after {
+    content: ''; position: absolute;
+    bottom: -18px; right: -12px;
+    width: 64px; height: 64px; border-radius: 50%;
+    opacity: .07;
+  }
+  .stat:nth-child(1)::after { background: #c0caf5; }
+  .stat:nth-child(2)::after { background: #9ece6a; }
+  .stat:nth-child(3)::after { background: #7aa2f7; }
+  .stat:nth-child(4)::after { background: #e0af68; }
+  .stat-label {
+    font-size: 11px; color: var(--text-dim);
+    letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500;
   }
   .stat-num {
-    font-family: 'Playfair Display', serif; font-size: 32px;
-    font-weight: 600; color: var(--text); line-height: 1;
+    font-family: 'Playfair Display', serif; font-size: 36px;
+    font-weight: 600; color: var(--text); line-height: 1.1; margin-top: 2px;
   }
-  .stat-label { font-size: 12px; color: var(--text-dim); margin-top: 4px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .stat-icon {
+    font-size: 18px; margin-bottom: 4px; display: block;
+  }
 
   /* ── Search Bar ── */
   .search-wrap { margin-bottom: 1rem; }
@@ -586,19 +603,21 @@
 
   /* MOBILE FIX: quick-progress */
   .quick-progress {
-    display: flex; flex-direction: column; gap: 8px;
+    display: flex; flex-direction: column; gap: 10px;
     background: var(--cream); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 10px 12px; margin-top: 8px;
+    border-radius: var(--radius-sm); padding: 12px 14px; margin-top: 8px;
   }
   .quick-progress-row {
     display: flex; align-items: center; gap: 8px; width: 100%;
+    flex: 1;
   }
   .quick-progress label {
     font-size: 11px; color: var(--text-dim); white-space: nowrap;
     letter-spacing: 0.04em; text-transform: uppercase; flex-shrink: 0;
   }
   .quick-progress input[type=range] {
-    flex: 1; min-width: 0; accent-color: var(--accent); height: 4px; cursor: pointer;
+    width: 100%; accent-color: var(--accent);
+    height: 6px; cursor: pointer; border-radius: 4px;
   }
   .quick-progress .pct-badge {
     font-size: 13px; font-weight: 500; color: var(--text);
@@ -1999,10 +2018,26 @@
     const concluidos = books.filter(b => b.status === 'Concluído').length;
     const pausados   = books.filter(b => b.status === 'Pausado').length;
     document.getElementById('stats').innerHTML = `
-      <div class="stat"><div class="stat-num">${total}</div><div class="stat-label">Total</div></div>
-      <div class="stat"><div class="stat-num">${lendo}</div><div class="stat-label">Lendo</div></div>
-      <div class="stat"><div class="stat-num">${concluidos}</div><div class="stat-label">Concluídos</div></div>
-      <div class="stat"><div class="stat-num">${pausados}</div><div class="stat-label">Pausados</div></div>`;
+      <div class="stat">
+        <span class="stat-icon">📚</span>
+        <div class="stat-label">Total</div>
+        <div class="stat-num">${total}</div>
+      </div>
+      <div class="stat">
+        <span class="stat-icon">📖</span>
+        <div class="stat-label">Lendo</div>
+        <div class="stat-num">${lendo}</div>
+      </div>
+      <div class="stat">
+        <span class="stat-icon">✅</span>
+        <div class="stat-label">Concluídos</div>
+        <div class="stat-num">${concluidos}</div>
+      </div>
+      <div class="stat">
+        <span class="stat-icon">⏸️</span>
+        <div class="stat-label">Pausados</div>
+        <div class="stat-num">${pausados}</div>
+      </div>`;
   }
 
   function renderBooks() {
