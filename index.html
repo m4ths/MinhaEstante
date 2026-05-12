@@ -839,21 +839,8 @@
     .pages-number { font-size: 40px; }
     .goal-count { font-size: 28px; }
     .goal-target { font-size: 22px; }
-    /* CORREÇÃO: botão salvar em linha própria, sem sobrepor slider */
-    .quick-progress {
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      grid-template-rows: auto auto;
-      row-gap: 8px;
-      column-gap: 10px;
-    }
-    .quick-progress label  { grid-column: 1; grid-row: 1; }
-    .quick-progress input[type=range] { grid-column: 2; grid-row: 1; }
-    .quick-progress .pct-badge { grid-column: 3; grid-row: 1; }
-    .quick-progress .btn-save-pct {
-      grid-column: 1 / -1; grid-row: 2;
-      width: 100%; text-align: center; padding: 10px;
-    }
+    /* quick-progress: já definido no CSS principal */
+    .quick-progress { display: flex; flex-direction: column; gap: 12px; }
   }
 
   /* Sections visibilidade via nav */
