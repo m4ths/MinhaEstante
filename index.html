@@ -2123,20 +2123,25 @@
                 : Math.round((pct/100)*(parseInt(b.paginas)||0));
               return `<div class="quick-progress">
                 ${isFisico && hasPags ? `
-                <div class="quick-progress-row">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em">Página atual</span>
+                  <span class="pct-badge" id="pct-${b.id}">${pct}%</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;width:100%">
                   <input type="number" min="0" max="${b.paginas}" id="pagina-atual-${b.id}"
                     value="${paginaAtual}"
-                    style="width:64px;padding:4px 8px;background:var(--paper);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:14px;text-align:center;"
+                    style="flex:1;padding:8px;background:var(--paper);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:16px;text-align:center;"
                     oninput="syncPageToPctCard('${b.id}',${b.paginas})" />
-                  <span style="font-size:12px;color:var(--text-dim);flex:1">de ${b.paginas} págs</span>
-                  <span class="pct-badge" id="pct-${b.id}">${pct}%</span>
+                  <span style="font-size:12px;color:var(--text-dim);white-space:nowrap">de ${b.paginas}</span>
                 </div>
                 <button class="btn-save-pct" onclick="saveProgress('${b.id}','${esc(b.titulo)}')">Salvar</button>` : `
-                <div class="quick-progress-row">
-                  <input type="range" min="0" max="100" step="1" value="${pct}" id="slider-${b.id}"
-                    oninput="document.getElementById('pct-${b.id}').textContent=this.value+'%'" />
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em">Progresso</span>
                   <span class="pct-badge" id="pct-${b.id}">${pct}%</span>
                 </div>
+                <input type="range" min="0" max="100" step="1" value="${pct}" id="slider-${b.id}"
+                  style="width:100%"
+                  oninput="document.getElementById('pct-${b.id}').textContent=this.value+'%'" />
                 <button class="btn-save-pct" onclick="saveProgress('${b.id}','${esc(b.titulo)}')">Salvar</button>`}
               </div>`;
             })() : ''}
