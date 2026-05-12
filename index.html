@@ -483,36 +483,48 @@
   .year-chip-count { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
 
   /* ── Stats ── */
+  /* ── Stats MD3 ── */
   .stats {
     display: grid; grid-template-columns: 1fr 1fr;
-    gap: 10px; margin-bottom: 1.5rem;
+    gap: 8px; margin-bottom: 1.25rem;
   }
   .stat {
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: 20px; padding: 1.1rem 1.25rem;
-    box-shadow: var(--shadow-card); position: relative; overflow: hidden;
-    display: flex; flex-direction: column; gap: 2px;
+    border-radius: 16px; padding: 16px;
+    display: flex; flex-direction: row;
+    align-items: center; gap: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.18), 0 1px 2px rgba(0,0,0,.12);
+    border: none; position: relative; overflow: hidden;
   }
-  .stat::after {
-    content: ''; position: absolute;
-    bottom: -18px; right: -12px;
-    width: 64px; height: 64px; border-radius: 50%;
-    opacity: .07;
+  .stat:nth-child(1) { background: #1e2a3a; }
+  .stat:nth-child(2) { background: #1a2e1a; }
+  .stat:nth-child(3) { background: #1e2030; }
+  .stat:nth-child(4) { background: #2a2010; }
+  [data-theme="light"] .stat:nth-child(1) { background: #e8edf8; }
+  [data-theme="light"] .stat:nth-child(2) { background: #e6f4e6; }
+  [data-theme="light"] .stat:nth-child(3) { background: #e8eaf6; }
+  [data-theme="light"] .stat:nth-child(4) { background: #fef3e2; }
+  .stat-icon-wrap {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
   }
-  .stat:nth-child(1)::after { background: #c0caf5; }
-  .stat:nth-child(2)::after { background: #9ece6a; }
-  .stat:nth-child(3)::after { background: #7aa2f7; }
-  .stat:nth-child(4)::after { background: #e0af68; }
+  .stat:nth-child(1) .stat-icon-wrap { background: rgba(192,202,245,.15); }
+  .stat:nth-child(2) .stat-icon-wrap { background: rgba(158,206,106,.15); }
+  .stat:nth-child(3) .stat-icon-wrap { background: rgba(122,162,247,.15); }
+  .stat:nth-child(4) .stat-icon-wrap { background: rgba(224,175,104,.15); }
+  .stat-info { display: flex; flex-direction: column; gap: 1px; }
   .stat-label {
-    font-size: 11px; color: var(--text-dim);
-    letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500;
+    font-size: 11px; font-weight: 500; letter-spacing: .05em;
+    text-transform: uppercase;
   }
+  .stat:nth-child(1) .stat-label { color: #7aa2f7; }
+  .stat:nth-child(2) .stat-label { color: #9ece6a; }
+  .stat:nth-child(3) .stat-label { color: #7aa2f7; }
+  .stat:nth-child(4) .stat-label { color: #e0af68; }
+  [data-theme="light"] .stat-label { opacity: .75; }
   .stat-num {
-    font-family: 'Playfair Display', serif; font-size: 36px;
-    font-weight: 600; color: var(--text); line-height: 1.1; margin-top: 2px;
-  }
-  .stat-icon {
-    font-size: 18px; margin-bottom: 4px; display: block;
+    font-family: 'Playfair Display', serif; font-size: 32px;
+    font-weight: 600; color: var(--text); line-height: 1;
   }
 
   /* ── Search Bar ── */
@@ -601,36 +613,53 @@
   .progress-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
   .progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-dim); margin-bottom: 8px; }
 
-  /* MOBILE FIX: quick-progress */
+  /* MOBILE FIX: quick-progress — MD3 */
   .quick-progress {
-    display: flex; flex-direction: column; gap: 10px;
+    display: flex; flex-direction: column; gap: 12px;
     background: var(--cream); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 12px 14px; margin-top: 8px;
+    border-radius: 16px; padding: 14px 16px; margin-top: 8px;
   }
   .quick-progress-row {
-    display: flex; align-items: center; gap: 8px; width: 100%;
-    flex: 1;
+    display: flex; align-items: center; gap: 10px; width: 100%;
   }
   .quick-progress label {
     font-size: 11px; color: var(--text-dim); white-space: nowrap;
     letter-spacing: 0.04em; text-transform: uppercase; flex-shrink: 0;
   }
   .quick-progress input[type=range] {
-    width: 100%; accent-color: var(--accent);
-    height: 6px; cursor: pointer; border-radius: 4px;
+    -webkit-appearance: none; appearance: none;
+    flex: 1; height: 16px; cursor: pointer;
+    background: transparent; padding: 0;
+  }
+  .quick-progress input[type=range]::-webkit-slider-runnable-track {
+    height: 16px; border-radius: 8px;
+    background: var(--border);
+  }
+  .quick-progress input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--accent);
+    margin-top: 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,.3);
+    transition: transform .15s;
+  }
+  .quick-progress input[type=range]:active::-webkit-slider-thumb {
+    transform: scale(1.25);
   }
   .quick-progress .pct-badge {
-    font-size: 13px; font-weight: 500; color: var(--text);
-    min-width: 32px; text-align: right; flex-shrink: 0;
+    font-size: 14px; font-weight: 600; color: var(--accent);
+    min-width: 36px; text-align: right; flex-shrink: 0;
   }
   .quick-progress .btn-save-pct {
-    width: 100%; padding: 8px; border: 1px solid var(--accent);
-    border-radius: var(--radius-pill); background: transparent;
-    color: var(--accent); font-size: 13px;
+    width: 100%; padding: 12px;
+    border-radius: 12px; border: none;
+    background: var(--accent); color: #fff;
+    font-size: 14px; font-weight: 600;
     font-family: 'DM Sans', sans-serif; cursor: pointer;
-    transition: all 0.15s; text-align: center;
+    transition: opacity .15s; letter-spacing: .02em;
   }
-  .quick-progress .btn-save-pct:hover { background: var(--accent); color: #fff; }
+  .quick-progress .btn-save-pct:hover { opacity: .88; }
+  .quick-progress .btn-save-pct:active { opacity: .75; }
 
   /* ── Empty / Toast / Modal ── */
   .empty { text-align: center; padding: 4rem 1rem; color: var(--text-dim); }
@@ -2019,24 +2048,32 @@
     const pausados   = books.filter(b => b.status === 'Pausado').length;
     document.getElementById('stats').innerHTML = `
       <div class="stat">
-        <span class="stat-icon">📚</span>
-        <div class="stat-label">Total</div>
-        <div class="stat-num">${total}</div>
+        <div class="stat-icon-wrap">📚</div>
+        <div class="stat-info">
+          <div class="stat-label">Total</div>
+          <div class="stat-num">${total}</div>
+        </div>
       </div>
       <div class="stat">
-        <span class="stat-icon">📖</span>
-        <div class="stat-label">Lendo</div>
-        <div class="stat-num">${lendo}</div>
+        <div class="stat-icon-wrap">📖</div>
+        <div class="stat-info">
+          <div class="stat-label">Lendo</div>
+          <div class="stat-num">${lendo}</div>
+        </div>
       </div>
       <div class="stat">
-        <span class="stat-icon">✅</span>
-        <div class="stat-label">Concluídos</div>
-        <div class="stat-num">${concluidos}</div>
+        <div class="stat-icon-wrap">✅</div>
+        <div class="stat-info">
+          <div class="stat-label">Concluídos</div>
+          <div class="stat-num">${concluidos}</div>
+        </div>
       </div>
       <div class="stat">
-        <span class="stat-icon">⏸️</span>
-        <div class="stat-label">Pausados</div>
-        <div class="stat-num">${pausados}</div>
+        <div class="stat-icon-wrap">⏸️</div>
+        <div class="stat-info">
+          <div class="stat-label">Pausados</div>
+          <div class="stat-num">${pausados}</div>
+        </div>
       </div>`;
   }
 
