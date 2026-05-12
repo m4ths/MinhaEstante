@@ -866,28 +866,10 @@
   .user-menu-item.danger { color: var(--accent); }
 
 
-  /* ── Modo de progresso (modal) ── */
-  .radio-opt {
-    display: flex; align-items: center; gap: 6px;
-    padding: 8px 14px; border-radius: var(--radius);
-    border: 1px solid var(--border); background: var(--cream);
-    cursor: pointer; font-size: 13px; color: var(--text);
-    transition: all .15s; flex: 1; justify-content: center;
-  }
-  .radio-opt:has(input:checked) {
-    border-color: var(--accent); background: rgba(122,162,247,.12); color: var(--accent);
-  }
-  .radio-opt input[type=radio] { display: none; }
+
 
   /* ── Progress inline card ── */
-  .btn-mode-toggle {
-    background: none; border: none; cursor: pointer;
-    font-size: 13px; padding: 0 2px; opacity: .45;
-    transition: opacity .2s; line-height: 1; margin-left: 4px;
-    vertical-align: middle;
-  }
-  .btn-mode-toggle:hover { opacity: 1; }
-  .btn-mode-toggle.pag-ativo { opacity: 1; color: var(--blue-tn); }
+
 
   .page-input-wrap {
     display: flex; align-items: center; gap: 6px; margin-top: 4px;
@@ -1107,6 +1089,27 @@
         </select>
       </div>
       <div class="field">
+        <label>Gênero</label>
+        <select id="f-genero">
+          <option value="">— selecione —</option>
+          <option value="Fantasia">Fantasia</option>
+          <option value="Romance">Romance</option>
+          <option value="Ficção Científica">Ficção Científica</option>
+          <option value="Aventura">Aventura</option>
+          <option value="Terror">Terror</option>
+          <option value="Suspense">Suspense</option>
+          <option value="Mistério">Mistério</option>
+          <option value="Histórico">Histórico</option>
+          <option value="Biografia">Biografia</option>
+          <option value="Não-ficção">Não-ficção</option>
+          <option value="Jovem Adulto">Jovem Adulto</option>
+          <option value="Infantil">Infantil</option>
+          <option value="Conto">Conto</option>
+          <option value="Poesia">Poesia</option>
+          <option value="Outro">Outro</option>
+        </select>
+      </div>
+      <div class="field">
         <label>Status</label>
         <select id="f-status">
           <option value="Lendo">Lendo</option>
@@ -1114,30 +1117,18 @@
           <option value="Pausado">Pausado</option>
         </select>
       </div>
-      <div class="field full" id="field-modo-progresso">
-        <label>Acompanhar progresso por</label>
-        <div style="display:flex;gap:10px;margin-top:4px">
-          <label class="radio-opt" id="radio-pct-label">
-            <input type="radio" name="modo-prog" id="modo-pct" value="pct" checked onchange="onModoProgresso()"> % concluído
-          </label>
-          <label class="radio-opt" id="radio-pag-label">
-            <input type="radio" name="modo-prog" id="modo-pag" value="pag" onchange="onModoProgresso()"> Nº da página
-          </label>
-        </div>
-      </div>
       <div class="field" id="field-progresso-pct">
         <label>Progresso (%)</label>
-        <input type="number" id="f-progresso" placeholder="0" min="0" max="100"
-          oninput="syncPctToPage()" />
+        <input type="number" id="f-progresso" placeholder="0" min="0" max="100" />
       </div>
-      <div class="field" id="field-pagina-atual" style="display:none">
+      <div class="field" id="field-pagina-atual-modal" style="display:none">
         <label>Página atual</label>
         <input type="number" id="f-pagina-atual" placeholder="0" min="0"
-          oninput="syncPageToPct()" />
+          oninput="calcPctFromPage()" />
       </div>
-      <div class="field" id="field-pct-calculado" style="display:none">
+      <div class="field" id="field-pct-readonly" style="display:none">
         <label style="color:var(--text-dim)">Progresso calculado</label>
-        <div id="pct-calculado-display" style="font-size:20px;font-weight:600;color:var(--accent);padding:6px 0">0%</div>
+        <div id="pct-from-page" style="font-size:22px;font-weight:600;color:var(--accent);padding:4px 0">0%</div>
       </div>
       <div class="field">
         <label>Data de início</label>
@@ -2045,29 +2036,28 @@
               <span>${pct === 100 ? '✓ Concluído' : ''}</span>
             </div>
             ${b.status !== 'Concluído' ? (() => {
-              const hasPags = !!(parseInt(b.paginas) > 0);
-              const modoPag = b.modoProg === 'pag' && hasPags;
-              const paginaAtual = Math.round((pct/100)*(parseInt(b.paginas)||0));
+              const isFisico = b.tipo === 'Físico';
+              const hasPags  = !!(parseInt(b.paginas) > 0);
+              const paginaAtual = b.paginaAtual
+                ? parseInt(b.paginaAtual)
+                : Math.round((pct/100)*(parseInt(b.paginas)||0));
               return `<div class="quick-progress">
+                ${isFisico && hasPags ? `
                 <div style="display:flex;align-items:center;gap:8px">
-                  ${modoPag ? `
-                  <div class="page-input-wrap" id="wrap-pag-${b.id}">
-                    <input type="number" min="0" max="${b.paginas||99999}" id="pagina-atual-${b.id}"
-                      value="${paginaAtual}"
-                      oninput="syncPageToPctCard('${b.id}',${b.paginas||0})" />
-                    <span class="page-total">de ${b.paginas} págs</span>
-                    <span class="pct-badge" id="pct-${b.id}">${pct}%</span>
-                  </div>` : `
-                  <div style="display:flex;align-items:center;gap:8px;flex:1" id="wrap-pct-${b.id}">
-                    <input type="range" min="0" max="100" step="1" value="${pct}" id="slider-${b.id}"
-                      oninput="document.getElementById('pct-${b.id}').textContent=this.value+'%';syncSliderToPage('${b.id}',${b.paginas||0})" />
-                    <span class="pct-badge" id="pct-${b.id}">${pct}%</span>
-                  </div>`}
-                  ${hasPags ? `<button class="btn-mode-toggle ${modoPag ? 'pag-ativo' : ''}"
-                    onclick="setCardMode('${b.id}','${modoPag ? 'pct' : 'pag'}')"
-                    title="${modoPag ? 'Mudar para % concluído' : 'Mudar para nº da página'}">📖</button>` : ''}
-                  <button class="btn-save-pct" onclick="saveProgress('${b.id}', '${esc(b.titulo)}')">Salvar</button>
-                </div>
+                  <input type="number" min="0" max="${b.paginas}" id="pagina-atual-${b.id}"
+                    value="${paginaAtual}"
+                    style="width:68px;padding:4px 8px;background:var(--cream);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:14px;text-align:center;"
+                    oninput="syncPageToPctCard('${b.id}',${b.paginas})" />
+                  <span style="font-size:12px;color:var(--text-dim)">de ${b.paginas} págs</span>
+                  <span class="pct-badge" id="pct-${b.id}">${pct}%</span>
+                  <button class="btn-save-pct" onclick="saveProgress('${b.id}','${esc(b.titulo)}')">Salvar</button>
+                </div>` : `
+                <div style="display:flex;align-items:center;gap:8px">
+                  <input type="range" min="0" max="100" step="1" value="${pct}" id="slider-${b.id}"
+                    oninput="document.getElementById('pct-${b.id}').textContent=this.value+'%'" />
+                  <span class="pct-badge" id="pct-${b.id}">${pct}%</span>
+                  <button class="btn-save-pct" onclick="saveProgress('${b.id}','${esc(b.titulo)}')">Salvar</button>
+                </div>`}
               </div>`;
             })() : ''}
             ${b.status === 'Lendo' ? (() => {
@@ -2105,35 +2095,21 @@
     return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  // ── Modal: modo de progresso ──
+  // ── Modal: tipo determina modo de progresso ──
   function onTipoChange() {
-    // mantido para compatibilidade, chama onModoProgresso
-    onModoProgresso();
+    const tipo = document.getElementById('f-tipo').value;
+    const isFisico = tipo === 'Físico';
+    document.getElementById('field-progresso-pct').style.display      = isFisico ? 'none' : '';
+    document.getElementById('field-pagina-atual-modal').style.display = isFisico ? '' : 'none';
+    document.getElementById('field-pct-readonly').style.display       = isFisico ? '' : 'none';
+    if (isFisico) calcPctFromPage();
   }
 
-  function onModoProgresso() {
-    const modo = document.querySelector('input[name="modo-prog"]:checked')?.value || 'pct';
-    document.getElementById('field-progresso-pct').style.display  = modo === 'pct' ? '' : 'none';
-    document.getElementById('field-pagina-atual').style.display   = modo === 'pag' ? '' : 'none';
-    document.getElementById('field-pct-calculado').style.display  = modo === 'pag' ? '' : 'none';
-  }
-
-  function syncPctToPage() {
-    const pct   = parseInt(document.getElementById('f-progresso').value) || 0;
-    const total = parseInt(document.getElementById('f-paginas').value)   || 0;
-    if (total > 0) {
-      document.getElementById('f-pagina-atual').value = Math.round((pct / 100) * total);
-    }
-  }
-
-  function syncPageToPct() {
+  function calcPctFromPage() {
     const page  = parseInt(document.getElementById('f-pagina-atual').value) || 0;
-    const total = parseInt(document.getElementById('f-paginas').value)      || 0;
-    if (total > 0) {
-      const pct = Math.min(100, Math.round((page / total) * 100));
-      document.getElementById('f-progresso').value = pct;
-      document.getElementById('pct-calculado-display').textContent = pct + '%';
-    }
+    const total = parseInt(document.getElementById('f-paginas').value) || 0;
+    const pct   = total > 0 ? Math.min(100, Math.round((page / total) * 100)) : 0;
+    document.getElementById('pct-from-page').textContent = pct + '%';
   }
 
   // ── Card: toggle de modo por livro ──
@@ -2182,34 +2158,36 @@
     document.getElementById('modal-title').textContent = 'Adicionar livro';
     ['titulo','autor','edicao','paginas','progresso','inicio','fim'].forEach(f => document.getElementById('f-'+f).value = '');
     document.getElementById('f-pagina-atual').value = '';
-    document.getElementById('modo-pct').checked = true;
-    onModoProgresso();
-    document.getElementById('f-tipo').value = 'Ebook';
+    document.getElementById('f-genero').value  = '';
+    document.getElementById('f-tipo').value    = 'Ebook';
+    document.getElementById('f-status').value  = 'Lendo';
+    document.getElementById('pct-from-page').textContent = '0%';
     onTipoChange();
-    document.getElementById('f-status').value = 'Lendo';
     document.getElementById('modal-overlay').classList.add('open');
   }
 
   function openEdit(book) {
     editingId = book.id;
     document.getElementById('modal-title').textContent = 'Editar livro';
-    document.getElementById('f-titulo').value    = book.titulo || '';
-    document.getElementById('f-autor').value     = book.autor || '';
-    document.getElementById('f-edicao').value    = book.edicao || '';
-    document.getElementById('f-paginas').value   = book.paginas || '';
+    document.getElementById('f-titulo').value    = book.titulo    || '';
+    document.getElementById('f-autor').value     = book.autor     || '';
+    document.getElementById('f-edicao').value    = book.edicao    || '';
+    document.getElementById('f-paginas').value   = book.paginas   || '';
     document.getElementById('f-progresso').value = book.progresso || '';
-    document.getElementById('f-status').value    = book.status || 'Lendo';
-    document.getElementById('f-tipo').value      = book.tipo || 'Ebook';
+    document.getElementById('f-status').value    = book.status    || 'Lendo';
+    document.getElementById('f-tipo').value      = book.tipo      || 'Ebook';
+    document.getElementById('f-genero').value    = book.genero    || '';
     onTipoChange();
+    // Se físico, preenche página atual a partir do progresso salvo
     if (book.tipo === 'Físico' && book.paginas) {
-      const modoProg = book.modoProg || (book.tipo === 'Físico' ? 'pag' : 'pct');
-      document.querySelector(`input[name="modo-prog"][value="${modoProg}"]`).checked = true;
-      onModoProgresso();
-      document.getElementById('f-pagina-atual').value = Math.round(((parseInt(book.progresso)||0)/100)*(parseInt(book.paginas)||0));
-      document.getElementById('pct-calculado-display').textContent = (parseInt(book.progresso)||0) + '%';
+      const paginaAtual = book.paginaAtual
+        ? parseInt(book.paginaAtual)
+        : Math.round(((parseInt(book.progresso)||0)/100)*(parseInt(book.paginas)||0));
+      document.getElementById('f-pagina-atual').value = paginaAtual;
+      document.getElementById('pct-from-page').textContent = (parseInt(book.progresso)||0) + '%';
     }
-    document.getElementById('f-inicio').value    = toInputDate(book.inicio);
-    document.getElementById('f-fim').value       = toInputDate(book.fim);
+    document.getElementById('f-inicio').value = toInputDate(book.inicio);
+    document.getElementById('f-fim').value    = toInputDate(book.fim);
     document.getElementById('modal-overlay').classList.add('open');
   }
 
@@ -2228,22 +2206,24 @@
   async function saveBook() {
     const titulo = document.getElementById('f-titulo').value.trim();
     if (!titulo) return toast('Título é obrigatório.', true);
-    const tipo = document.getElementById('f-tipo').value;
-    const modo = document.querySelector('input[name="modo-prog"]:checked')?.value || 'pct';
-    let progresso = document.getElementById('f-progresso').value.trim() || '0';
+    const tipo      = document.getElementById('f-tipo').value;
+    const isFisico  = tipo === 'Físico';
+    let progresso   = '0';
     let paginaAtualSalva = '';
-    if (modo === 'pag') {
+    if (isFisico) {
       const paginaAtual = parseInt(document.getElementById('f-pagina-atual').value) || 0;
       const totalPags   = parseInt(document.getElementById('f-paginas').value) || 0;
-      progresso = totalPags > 0 ? String(Math.min(100, Math.round((paginaAtual / totalPags) * 100))) : '0';
+      progresso        = totalPags > 0 ? String(Math.min(100, Math.round((paginaAtual / totalPags) * 100))) : '0';
       paginaAtualSalva = String(paginaAtual);
+    } else {
+      progresso = document.getElementById('f-progresso').value.trim() || '0';
     }
     const book = {
       titulo, autor: document.getElementById('f-autor').value.trim(), tipo,
-      edicao: document.getElementById('f-edicao').value.trim(),
+      genero:  document.getElementById('f-genero').value,
+      edicao:  document.getElementById('f-edicao').value.trim(),
       paginas: document.getElementById('f-paginas').value.trim(),
       progresso,
-      modoProg: modo,
       paginaAtual: paginaAtualSalva,
       status: document.getElementById('f-status').value,
       inicio: document.getElementById('f-inicio').value ? fmtDate(document.getElementById('f-inicio').value) : '',
@@ -2270,27 +2250,38 @@
   }
 
   async function saveProgress(id, titulo) {
-    const slider = document.getElementById('slider-' + id);
-    const pageInput2 = document.getElementById('pagina-atual-' + id);
-    if (!slider && !pageInput2) return;
-    // for physical books, pct comes from page input's dataset
+    const slider    = document.getElementById('slider-'      + id);
     const pageInput = document.getElementById('pagina-atual-' + id);
-    const newPct = pageInput
-      ? parseInt(pageInput.dataset.pct ?? pageInput.value ?? 0)
-      : parseInt(slider ? slider.value : 0);
-    const book   = books.find(b => b.id === id);
+    if (!slider && !pageInput) return;
+
+    const book = books.find(b => String(b.id) === String(id));
     if (!book) return;
+
+    const isFisico   = book.tipo === 'Físico';
+    const totalPags  = parseInt(book.paginas) || 0;
+    let newPct       = 0;
+    let novaPagina   = '';
+
+    if (isFisico && pageInput && totalPags > 0) {
+      const paginaAtual = parseInt(pageInput.value) || 0;
+      newPct    = Math.min(100, Math.round((paginaAtual / totalPags) * 100));
+      novaPagina = String(paginaAtual);
+    } else if (slider) {
+      newPct = parseInt(slider.value) || 0;
+    }
+
     const oldPct = parseInt(book.progresso) || 0;
     try {
-      await dbUpdateBook(id, { ...book, progresso: newPct });
+      await dbUpdateBook(id, { ...book, progresso: newPct, paginaAtual: novaPagina });
       const pagesAdded = await registerPagesFromProgress(book, oldPct, newPct);
-      book.progresso = newPct;
+      book.progresso   = newPct;
+      book.paginaAtual = novaPagina;
       saveCache(BOOKS_CACHE_KEY, books);
       render();
       if (pagesAdded > 0) {
         toast(`Progresso salvo! +${pagesAdded} páginas registradas.`);
       } else {
-        toast('Progresso de "' + titulo + '" atualizado para ' + newPct + '%!');
+        toast(`Progresso de "${titulo}" atualizado para ${newPct}%!`);
       }
     } catch (e) { toast('Erro ao salvar progresso: ' + e.message, true); }
   }
