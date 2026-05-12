@@ -1239,7 +1239,6 @@
 
   // Cache de totais para o gráfico
   let pagesTotals = { hoje: 0, semana: 0, mes: 0, ano: 0 };
-  let pagesLoaded = { hoje: false, semana: false, mes: false, ano: false };
   let chartAnimFrame = null;
   let allEntriesCache = null; // cache para cálculo de recordes
 
@@ -1262,7 +1261,6 @@
 
       if (['hoje','semana','mes','ano'].includes(currentPagesTab)) {
         pagesTotals[currentPagesTab] = total;
-        pagesLoaded[currentPagesTab] = true;
       }
 
       const byBook = {};
@@ -1286,12 +1284,11 @@
 
   async function loadAllPeriodsForChart() {
     const periods = ['hoje', 'semana', 'mes', 'ano'];
-    const missing = periods.filter(p => !pagesLoaded[p]);
+    const missing = periods.filter(p => pagesTotals[p] === 0 && p !== currentPagesTab);
     try {
       await Promise.all(missing.map(async p => {
         const d = await dbGetPages(p);
         pagesTotals[p] = (d.entries || []).reduce((s, e) => s + (parseInt(e.pages) || 0), 0);
-        pagesLoaded[p] = true;
       }));
     } catch(_) {}
     drawChart();
@@ -1833,9 +1830,6 @@
     saveCache(PAGES_CACHE_KEY, entries);
     computeAvgPagesPerDay(entries);
     allEntriesCache = entries;
-    // Reseta flags para forçar recálculo dos totais com dados frescos
-    pagesTotals = { hoje: 0, semana: 0, mes: 0, ano: 0 };
-    pagesLoaded = { hoje: false, semana: false, mes: false, ano: false };
     render();
   }
 
@@ -1891,8 +1885,6 @@
     }
     // Invalida cache de páginas
     allEntriesCache = null;
-    pagesTotals = { hoje: 0, semana: 0, mes: 0, ano: 0 };
-    pagesLoaded = { hoje: false, semana: false, mes: false, ano: false };
     localStorage.removeItem(PAGES_CACHE_KEY);
   }
 
