@@ -586,25 +586,25 @@
 
   /* MOBILE FIX: quick-progress */
   .quick-progress {
-    display: flex; align-items: center; gap: 10px;
+    display: flex; align-items: center; gap: 8px;
     background: var(--cream); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 10px 14px; margin-top: 8px;
-    flex-wrap: wrap;
+    border-radius: var(--radius-sm); padding: 9px 12px; margin-top: 8px;
+    flex-wrap: nowrap; overflow: hidden;
   }
   .quick-progress label {
     font-size: 11px; color: var(--text-dim); white-space: nowrap;
     letter-spacing: 0.04em; text-transform: uppercase; flex-shrink: 0;
   }
   .quick-progress input[type=range] {
-    flex: 1; min-width: 80px; accent-color: var(--accent); height: 4px; cursor: pointer;
+    flex: 1; min-width: 60px; accent-color: var(--accent); height: 4px; cursor: pointer;
   }
   .quick-progress .pct-badge {
     font-size: 13px; font-weight: 500; color: var(--text);
-    min-width: 36px; text-align: right; flex-shrink: 0;
+    min-width: 32px; text-align: right; flex-shrink: 0;
   }
   .quick-progress .btn-save-pct {
-    padding: 6px 14px; border: 1px solid var(--accent); border-radius: var(--radius-pill);
-    background: transparent; color: var(--accent); font-size: 12px;
+    padding: 5px 11px; border: 1px solid var(--accent); border-radius: var(--radius-pill);
+    background: transparent; color: var(--accent); font-size: 11px;
     font-family: 'DM Sans', sans-serif; cursor: pointer; flex-shrink: 0;
     transition: all 0.15s; white-space: nowrap;
   }
@@ -985,7 +985,7 @@
           <div class="chart-legend" id="chart-legend"></div>
         </div>
         <div class="chart-wrap">
-          <canvas id="pages-chart" height="180"></canvas>
+          <canvas id="pages-chart"></canvas>
           <div class="chart-tooltip" id="chart-tooltip"></div>
         </div>
       </div>
@@ -1411,6 +1411,11 @@
   function drawChart() {
     const canvas = document.getElementById('pages-chart');
     if (!canvas) return;
+    // Se o canvas não está visível ainda, tenta novamente em breve
+    if (!canvas.offsetWidth) {
+      setTimeout(drawChart, 150);
+      return;
+    }
     const dpr = window.devicePixelRatio || 1;
     const W = canvas.offsetWidth;
     const H = 210; // altura extra para acomodar linha de recorde acima
