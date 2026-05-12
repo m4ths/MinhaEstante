@@ -866,10 +866,28 @@
   .user-menu-item.danger { color: var(--accent); }
 
 
-
+  /* ── Modo de progresso (modal) ── */
+  .radio-opt {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: var(--radius);
+    border: 1px solid var(--border); background: var(--cream);
+    cursor: pointer; font-size: 13px; color: var(--text);
+    transition: all .15s; flex: 1; justify-content: center;
+  }
+  .radio-opt:has(input:checked) {
+    border-color: var(--accent); background: rgba(122,162,247,.12); color: var(--accent);
+  }
+  .radio-opt input[type=radio] { display: none; }
 
   /* ── Progress inline card ── */
-
+  .btn-mode-toggle {
+    background: none; border: none; cursor: pointer;
+    font-size: 13px; padding: 0 2px; opacity: .45;
+    transition: opacity .2s; line-height: 1; margin-left: 4px;
+    vertical-align: middle;
+  }
+  .btn-mode-toggle:hover { opacity: 1; }
+  .btn-mode-toggle.pag-ativo { opacity: 1; color: var(--blue-tn); }
 
   .page-input-wrap {
     display: flex; align-items: center; gap: 6px; margin-top: 4px;
@@ -1096,9 +1114,30 @@
           <option value="Pausado">Pausado</option>
         </select>
       </div>
+      <div class="field full" id="field-modo-progresso">
+        <label>Acompanhar progresso por</label>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <label class="radio-opt" id="radio-pct-label">
+            <input type="radio" name="modo-prog" id="modo-pct" value="pct" checked onchange="onModoProgresso()"> % concluído
+          </label>
+          <label class="radio-opt" id="radio-pag-label">
+            <input type="radio" name="modo-prog" id="modo-pag" value="pag" onchange="onModoProgresso()"> Nº da página
+          </label>
+        </div>
+      </div>
       <div class="field" id="field-progresso-pct">
         <label>Progresso (%)</label>
-        <input type="number" id="f-progresso" placeholder="0" min="0" max="100" />
+        <input type="number" id="f-progresso" placeholder="0" min="0" max="100"
+          oninput="syncPctToPage()" />
+      </div>
+      <div class="field" id="field-pagina-atual" style="display:none">
+        <label>Página atual</label>
+        <input type="number" id="f-pagina-atual" placeholder="0" min="0"
+          oninput="syncPageToPct()" />
+      </div>
+      <div class="field" id="field-pct-calculado" style="display:none">
+        <label style="color:var(--text-dim)">Progresso calculado</label>
+        <div id="pct-calculado-display" style="font-size:20px;font-weight:600;color:var(--accent);padding:6px 0">0%</div>
       </div>
       <div class="field">
         <label>Data de início</label>
@@ -1200,6 +1239,7 @@
 
   // Cache de totais para o gráfico
   let pagesTotals = { hoje: 0, semana: 0, mes: 0, ano: 0 };
+  let pagesLoaded = { hoje: false, semana: false, mes: false, ano: false };
   let chartAnimFrame = null;
   let allEntriesCache = null; // cache para cálculo de recordes
 
@@ -1222,6 +1262,7 @@
 
       if (['hoje','semana','mes','ano'].includes(currentPagesTab)) {
         pagesTotals[currentPagesTab] = total;
+        pagesLoaded[currentPagesTab] = true;
       }
 
       const byBook = {};
@@ -1245,11 +1286,12 @@
 
   async function loadAllPeriodsForChart() {
     const periods = ['hoje', 'semana', 'mes', 'ano'];
-    const missing = periods.filter(p => pagesTotals[p] === 0 && p !== currentPagesTab);
+    const missing = periods.filter(p => !pagesLoaded[p]);
     try {
       await Promise.all(missing.map(async p => {
         const d = await dbGetPages(p);
         pagesTotals[p] = (d.entries || []).reduce((s, e) => s + (parseInt(e.pages) || 0), 0);
+        pagesLoaded[p] = true;
       }));
     } catch(_) {}
     drawChart();
@@ -1791,6 +1833,9 @@
     saveCache(PAGES_CACHE_KEY, entries);
     computeAvgPagesPerDay(entries);
     allEntriesCache = entries;
+    // Reseta flags para forçar recálculo dos totais com dados frescos
+    pagesTotals = { hoje: 0, semana: 0, mes: 0, ano: 0 };
+    pagesLoaded = { hoje: false, semana: false, mes: false, ano: false };
     render();
   }
 
@@ -1846,6 +1891,8 @@
     }
     // Invalida cache de páginas
     allEntriesCache = null;
+    pagesTotals = { hoje: 0, semana: 0, mes: 0, ano: 0 };
+    pagesLoaded = { hoje: false, semana: false, mes: false, ano: false };
     localStorage.removeItem(PAGES_CACHE_KEY);
   }
 
@@ -2005,13 +2052,32 @@
               <span>${pct}% lido${b.paginas && pct > 0 ? ` · ${Math.round((pct/100)*parseInt(b.paginas))} de ${b.paginas} págs` : ''}</span>
               <span>${pct === 100 ? '✓ Concluído' : ''}</span>
             </div>
-            ${b.status !== 'Concluído' ? `
-            <div class="quick-progress">
-              <input type="range" min="0" max="100" step="1" value="${pct}" id="slider-${b.id}"
-                oninput="document.getElementById('pct-${b.id}').textContent=this.value+'%'" />
-              <span class="pct-badge" id="pct-${b.id}">${pct}%</span>
-              <button class="btn-save-pct" onclick="saveProgress('${b.id}','${esc(b.titulo)}')">Salvar</button>
-            </div>` : ''}
+            ${b.status !== 'Concluído' ? (() => {
+              const hasPags = !!(parseInt(b.paginas) > 0);
+              const modoPag = b.modoProg === 'pag' && hasPags;
+              const paginaAtual = Math.round((pct/100)*(parseInt(b.paginas)||0));
+              return `<div class="quick-progress">
+                <div style="display:flex;align-items:center;gap:8px">
+                  ${modoPag ? `
+                  <div class="page-input-wrap" id="wrap-pag-${b.id}">
+                    <input type="number" min="0" max="${b.paginas||99999}" id="pagina-atual-${b.id}"
+                      value="${paginaAtual}"
+                      oninput="syncPageToPctCard('${b.id}',${b.paginas||0})" />
+                    <span class="page-total">de ${b.paginas} págs</span>
+                    <span class="pct-badge" id="pct-${b.id}">${pct}%</span>
+                  </div>` : `
+                  <div style="display:flex;align-items:center;gap:8px;flex:1" id="wrap-pct-${b.id}">
+                    <input type="range" min="0" max="100" step="1" value="${pct}" id="slider-${b.id}"
+                      oninput="document.getElementById('pct-${b.id}').textContent=this.value+'%';syncSliderToPage('${b.id}',${b.paginas||0})" />
+                    <span class="pct-badge" id="pct-${b.id}">${pct}%</span>
+                  </div>`}
+                  ${hasPags ? `<button class="btn-mode-toggle ${modoPag ? 'pag-ativo' : ''}"
+                    onclick="setCardMode('${b.id}','${modoPag ? 'pct' : 'pag'}')"
+                    title="${modoPag ? 'Mudar para % concluído' : 'Mudar para nº da página'}">📖</button>` : ''}
+                  <button class="btn-save-pct" onclick="saveProgress('${b.id}', '${esc(b.titulo)}')">Salvar</button>
+                </div>
+              </div>`;
+            })() : ''}
             ${b.status === 'Lendo' ? (() => {
               const est = estimateFinish(b);
               if (!est) return '';
