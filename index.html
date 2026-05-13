@@ -826,6 +826,72 @@
   .estimate-text strong { color: var(--text); font-weight: 500; }
   .estimate-avg { font-size: 11px; color: var(--text-dim); margin-left: auto; flex-shrink: 0; }
 
+  /* ── Modal de Recorde ── */
+  .record-modal-overlay {
+    position: fixed; inset: 0; z-index: 500;
+    background: rgba(0,0,0,0.82);
+    display: none; align-items: center; justify-content: center;
+    padding: 1.5rem;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+  .record-modal-overlay.open { display: flex; }
+  .record-modal {
+    background: var(--card); border: 1px solid var(--border-light);
+    border-radius: var(--radius); padding: 2rem 1.75rem 1.75rem;
+    width: 100%; max-width: 360px;
+    text-align: center;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+    animation: popIn 0.32s cubic-bezier(0.34,1.3,0.64,1);
+    position: relative;
+  }
+  @keyframes popIn {
+    from { transform: scale(0.8); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+  }
+  .record-modal-emoji { font-size: 52px; line-height: 1; margin-bottom: .75rem; }
+  .record-modal-title {
+    font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 600;
+    color: var(--text); margin-bottom: .5rem;
+  }
+  .record-modal-period {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .07em;
+    padding: 3px 12px; border-radius: 50px;
+    background: var(--amber-light); color: var(--amber);
+    margin-bottom: 1rem;
+  }
+  .record-modal-value {
+    font-family: 'Playfair Display', serif; font-size: 42px; font-weight: 700;
+    color: var(--amber); line-height: 1;
+  }
+  .record-modal-unit { font-size: 14px; color: var(--text-dim); margin-bottom: 1.5rem; }
+  .record-modal-msg { font-size: 14px; color: var(--text-dim); margin-bottom: 1.75rem; line-height: 1.55; }
+  .btn-share {
+    width: 100%; padding: 14px;
+    border-radius: var(--radius-pill); border: none;
+    background: var(--accent); color: #fff;
+    font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: opacity .15s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    margin-bottom: 10px;
+  }
+  .btn-share:hover { opacity: .88; }
+  .btn-share:active { opacity: .75; }
+  .btn-record-close {
+    width: 100%; padding: 11px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-light);
+    background: transparent; color: var(--text-dim);
+    font-family: 'DM Sans', sans-serif; font-size: 14px;
+    cursor: pointer; transition: all .15s;
+  }
+  .btn-record-close:hover { background: var(--cream); color: var(--text); }
+  .record-confetti {
+    position: absolute; top: -6px; left: 50%; transform: translateX(-50%);
+    font-size: 18px; letter-spacing: 6px; pointer-events: none;
+  }
+
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: var(--paper); }
   ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
@@ -1186,6 +1252,23 @@
 </div>
 
 <div id="toast"></div>
+
+<!-- Modal de Recorde -->
+<div class="record-modal-overlay" id="record-modal-overlay">
+  <div class="record-modal">
+    <div class="record-confetti" id="record-confetti"></div>
+    <div class="record-modal-emoji" id="record-modal-emoji">🏆</div>
+    <div class="record-modal-title">Novo recorde!</div>
+    <div class="record-modal-period" id="record-modal-period">Melhor dia</div>
+    <div class="record-modal-value" id="record-modal-value">0</div>
+    <div class="record-modal-unit">páginas</div>
+    <div class="record-modal-msg" id="record-modal-msg"></div>
+    <button class="btn-share" id="btn-share-record" onclick="shareRecord()">
+      <span>📤</span> Compartilhar conquista
+    </button>
+    <button class="btn-record-close" onclick="closeRecordModal()">Fechar</button>
+  </div>
+</div>
 
 <script>
   const API_KEY   = 'ebook_api_url';
@@ -2353,6 +2436,7 @@
       render();
       if (pagesAdded > 0) {
         toast(`Progresso salvo! +${pagesAdded} páginas registradas.`);
+        await checkAndCelebrateRecord(pagesAdded);
       } else {
         toast(`Progresso de "${titulo}" atualizado para ${newPct}%!`);
       }
@@ -2378,8 +2462,128 @@
     toastTimer = setTimeout(() => el.className = '', 3500);
   }
 
+  // ── Recorde: estado do modal ──
+  let _recordModalData = null;
+
+  const RECORD_PERIOD_LABELS = {
+    dia:    { label: '🌅 Melhor dia',     emoji: '🌅', msg: (v) => `Você leu ${v} páginas em um único dia. Isso é incrível — continue assim!` },
+    semana: { label: '📆 Melhor semana',  emoji: '📆', msg: (v) => `${v} páginas em uma semana! Sua sequência de leitura está impressionante.` },
+    mes:    { label: '📅 Melhor mês',     emoji: '📅', msg: (v) => `Um mês com ${v} páginas. Você está construindo um hábito poderoso!` },
+    ano:    { label: '🗓️ Melhor ano',     emoji: '🗓️', msg: (v) => `${v} páginas em um ano — seu melhor resultado até agora. Que jornada!` },
+  };
+
+  // Verifica se algum recorde foi batido após registrar páginas
+  async function checkAndCelebrateRecord(pagesAdded) {
+    if (pagesAdded <= 0) return;
+    // Invalida cache para recalcular com os novos dados
+    allEntriesCache = null;
+    const snap = useFirestore()
+      ? await (async () => { const s = await window._fbGetDocs(pagesRef()); return s.docs.map(d => d.data()); })()
+      : (loadCache(PAGES_CACHE_KEY) || []);
+    if (!snap.length) return;
+    allEntriesCache = snap;
+
+    const today  = todayStr();
+    const wkStart = getWeekStart();
+    const moStart = today.slice(0,7) + '-01';
+    const yrStart = today.slice(0,4) + '-01-01';
+
+    // Agrupa por período
+    const byDay = {}, byWeek = {}, byMonth = {}, byYear = {};
+    snap.forEach(e => {
+      const d = e.date || '';
+      if (!d) return;
+      byDay[d]             = (byDay[d] || 0)             + (parseInt(e.pages) || 0);
+      const wk = getWeekKeyOf(d);
+      byWeek[wk]           = (byWeek[wk] || 0)           + (parseInt(e.pages) || 0);
+      byMonth[d.slice(0,7)]= (byMonth[d.slice(0,7)] || 0)+ (parseInt(e.pages) || 0);
+      byYear[d.slice(0,4)] = (byYear[d.slice(0,4)] || 0) + (parseInt(e.pages) || 0);
+    });
+
+    const curDay  = byDay[today] || 0;
+    const curWeek = byWeek[getWeekKeyOf(today)] || 0;
+    const curMonth= byMonth[today.slice(0,7)] || 0;
+    const curYear = byYear[today.slice(0,4)] || 0;
+
+    // Recorde anterior (máximo excluindo o período atual)
+    function maxExcluding(obj, key) {
+      return Math.max(0, ...Object.entries(obj).filter(([k]) => k !== key).map(([,v]) => v));
+    }
+
+    const prevBestDay  = maxExcluding(byDay,   today);
+    const prevBestWeek = maxExcluding(byWeek,  getWeekKeyOf(today));
+    const prevBestMonth= maxExcluding(byMonth, today.slice(0,7));
+    const prevBestYear = maxExcluding(byYear,  today.slice(0,4));
+
+    // Prioridade: ano > mês > semana > dia (celebra apenas um por vez, o mais relevante)
+    let winner = null;
+    if (curYear  > prevBestYear  && prevBestYear  > 0) winner = { period: 'ano',    cur: curYear  };
+    if (curMonth > prevBestMonth && prevBestMonth > 0) winner = { period: 'mes',    cur: curMonth };
+    if (curWeek  > prevBestWeek  && prevBestWeek  > 0) winner = { period: 'semana', cur: curWeek  };
+    if (curDay   > prevBestDay   && prevBestDay   > 0) winner = { period: 'dia',    cur: curDay   };
+
+    // Primeiro recorde absoluto (nunca havia lido nada antes) — celebra o dia
+    if (!winner) {
+      const totalEntries = Object.keys(byDay).length;
+      if (totalEntries === 1) winner = { period: 'dia', cur: curDay, firstEver: true };
+    }
+
+    if (winner) showRecordModal(winner);
+  }
+
+  function showRecordModal(data) {
+    _recordModalData = data;
+    const info = RECORD_PERIOD_LABELS[data.period];
+    const val  = data.cur.toLocaleString('pt-BR');
+
+    document.getElementById('record-modal-emoji').textContent  = info.emoji;
+    document.getElementById('record-modal-period').textContent = info.label;
+    document.getElementById('record-modal-value').textContent  = val;
+    document.getElementById('record-modal-msg').textContent    = data.firstEver
+      ? `Sua primeira sessão de leitura registrada: ${val} páginas. Todo grande leitor começa assim — bem-vindo ao clube! 📚`
+      : info.msg(val);
+
+    // Confetti decorativo
+    document.getElementById('record-confetti').textContent = '🎉✨🏆✨🎉';
+
+    document.getElementById('record-modal-overlay').classList.add('open');
+  }
+
+  function closeRecordModal() {
+    document.getElementById('record-modal-overlay').classList.remove('open');
+    _recordModalData = null;
+  }
+
+  async function shareRecord() {
+    if (!_recordModalData) return;
+    const info = RECORD_PERIOD_LABELS[_recordModalData.period];
+    const val  = _recordModalData.cur.toLocaleString('pt-BR');
+    const text = `🏆 Novo recorde na Minha Estante!\n${info.label}: ${val} páginas lidas.\nEstou construindo meu hábito de leitura um dia de cada vez. 📚`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Minha Estante — Novo Recorde!', text });
+      } catch(e) {
+        if (e.name !== 'AbortError') toast('Não foi possível compartilhar.', true);
+      }
+    } else {
+      // Fallback: copia para clipboard
+      try {
+        await navigator.clipboard.writeText(text);
+        toast('Texto copiado! Cole nas suas redes. 📋');
+      } catch(_) {
+        toast('Compartilhamento não suportado neste navegador.', true);
+      }
+    }
+  }
+
   document.getElementById('modal-overlay').addEventListener('click', function(e) {
     if (e.target === this) closeModal();
+  });
+
+  // Fecha o modal de recorde ao clicar fora
+  document.getElementById('record-modal-overlay').addEventListener('click', function(e) {
+    if (e.target === this) closeRecordModal();
   });
 
   // Fecha menu de usuário ao clicar fora
