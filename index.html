@@ -595,6 +595,7 @@
   .badge-pausado { background: var(--amber-light); color: var(--amber); }
   .badge-fisico { background: var(--blue-tn-light); color: var(--blue-tn); font-size: 9px; }
   .badge-ebook  { background: var(--green-light); color: var(--green); font-size: 9px; }
+  .badge-genero { background: var(--amber-light); color: var(--amber); font-size: 9px; }
   .book-actions { display: flex; gap: 6px; flex-shrink: 0; }
   .btn-icon {
     width: 32px; height: 32px; border: 1px solid var(--border); background: transparent;
@@ -2082,7 +2083,7 @@
       const pct = Math.min(100, Math.max(0, parseInt(b.progresso) || 0));
       const barColor   = pct === 100 ? '#9ece6a' : pct > 50 ? '#7aa2f7' : '#e0af68';
       const badgeClass = b.status === 'Lendo' ? 'badge-lendo' : b.status === 'Concluído' ? 'badge-concluido' : 'badge-pausado';
-      const meta    = [b.autor, b.edicao, b.paginas ? b.paginas + ' págs' : ''].filter(Boolean).join(' · ');
+      const meta    = [b.autor, b.edicao, b.paginas ? b.paginas + ' págs' : '', b.genero ? '📖 ' + b.genero : ''].filter(Boolean).join(' · ');
       const periodo = [fmtDate(b.inicio) && 'Início: ' + fmtDate(b.inicio), fmtDate(b.fim) && 'Fim: ' + fmtDate(b.fim)].filter(Boolean).join(' · ');
       return `
         <div class="book-card">
