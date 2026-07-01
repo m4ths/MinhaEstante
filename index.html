@@ -1301,7 +1301,7 @@
   let selectedYear = new Date().getFullYear();
   let goals    = {}; // populado em _appInit após login
   let currentPagesTab = 'hoje';
-  let avgPagesPerDay = 0; // calculado do histórico total
+  let avgPagesPerDayByBook = {}; // calculado por livro, a partir do histórico de cada um
 
   /* ── Date helpers ── */
   // ⚠️ Não usar toISOString() — ela retorna UTC e pode virar "amanhã" após 21h no Brasil.
@@ -2050,27 +2050,37 @@
   }
 
   function computeAvgPagesPerDay(entries) {
-    if (!entries.length) { avgPagesPerDay = 0; return; }
-    const total = entries.reduce((s, e) => s + (parseInt(e.pages) || 0), 0);
-    // dias únicos com leitura
-    const days = new Set(entries.map(e => e.date)).size;
-    avgPagesPerDay = days > 0 ? total / days : 0;
+    const byBook = {};
+    entries.forEach(e => {
+      const key = String(e.bookId || '');
+      if (!key) return;
+      if (!byBook[key]) byBook[key] = { total: 0, days: new Set() };
+      byBook[key].total += (parseInt(e.pages) || 0);
+      if (e.date) byBook[key].days.add(e.date);
+    });
+    const result = {};
+    Object.keys(byBook).forEach(key => {
+      const { total, days } = byBook[key];
+      result[key] = days.size > 0 ? total / days.size : 0;
+    });
+    avgPagesPerDayByBook = result;
   }
 
   function estimateFinish(book) {
-    if (avgPagesPerDay <= 0) return null;
+    const avg = avgPagesPerDayByBook[String(book.id)] || 0;
+    if (avg <= 0) return null;
     const totalPages = parseInt(book.paginas) || 0;
     if (!totalPages) return null;
     const pct = parseInt(book.progresso) || 0;
     const pagesRead = Math.round((pct / 100) * totalPages);
     const remaining = totalPages - pagesRead;
     if (remaining <= 0) return null;
-    const days = Math.ceil(remaining / avgPagesPerDay);
+    const days = Math.ceil(remaining / avg);
     const finish = new Date();
     finish.setDate(finish.getDate() + days);
     const months = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
     const dateStr = `${finish.getDate()} ${months[finish.getMonth()]} ${finish.getFullYear()}`;
-    return { days, dateStr, remaining, avg: Math.round(avgPagesPerDay) };
+    return { days, dateStr, remaining, avg: Math.round(avg) };
   }
 
   function setTab(tab, el) {
