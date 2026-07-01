@@ -2374,6 +2374,8 @@
     } else {
       progresso = document.getElementById('f-progresso').value.trim() || '0';
     }
+    let status = document.getElementById('f-status').value;
+    if (parseInt(progresso) >= 100) status = 'Concluído';
     const book = {
       titulo, autor: document.getElementById('f-autor').value.trim(), tipo,
       genero:  document.getElementById('f-genero').value,
@@ -2381,7 +2383,7 @@
       paginas: document.getElementById('f-paginas').value.trim(),
       progresso,
       paginaAtual: paginaAtualSalva,
-      status: document.getElementById('f-status').value,
+      status,
       inicio: document.getElementById('f-inicio').value ? fmtDate(document.getElementById('f-inicio').value) : '',
       fim:    document.getElementById('f-fim').value    ? fmtDate(document.getElementById('f-fim').value)    : ''
     };
@@ -2427,18 +2429,20 @@
     }
 
     const oldPct = parseInt(book.progresso) || 0;
+    const newStatus = newPct >= 100 ? 'Concluído' : book.status;
     try {
-      await dbUpdateBook(id, { ...book, progresso: newPct, paginaAtual: novaPagina });
+      await dbUpdateBook(id, { ...book, progresso: newPct, paginaAtual: novaPagina, status: newStatus });
       const pagesAdded = await registerPagesFromProgress(book, oldPct, newPct);
       book.progresso   = newPct;
       book.paginaAtual = novaPagina;
+      book.status      = newStatus;
       saveCache(BOOKS_CACHE_KEY, books);
       render();
       if (pagesAdded > 0) {
-        toast(`Progresso salvo! +${pagesAdded} páginas registradas.`);
+        toast(newPct >= 100 ? `Livro concluído! +${pagesAdded} páginas registradas.` : `Progresso salvo! +${pagesAdded} páginas registradas.`);
         await checkAndCelebrateRecord(pagesAdded);
       } else {
-        toast(`Progresso de "${titulo}" atualizado para ${newPct}%!`);
+        toast(newPct >= 100 ? `"${titulo}" marcado como Concluído!` : `Progresso de "${titulo}" atualizado para ${newPct}%!`);
       }
     } catch (e) { toast('Erro ao salvar progresso: ' + e.message, true); }
   }
