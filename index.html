@@ -2391,10 +2391,14 @@
     btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Salvando...';
     try {
       if (editingId) {
+        const oldBook = books.find(b => b.id === editingId);
+        const oldPct  = parseInt(oldBook && oldBook.progresso) || 0;
         await dbUpdateBook(editingId, book);
         const idx = books.findIndex(b => b.id === editingId);
         if (idx !== -1) books[idx] = { ...book, id: editingId };
         saveCache(BOOKS_CACHE_KEY, books);
+        const pagesAdded = await registerPagesFromProgress({ ...book, id: editingId }, oldPct, parseInt(progresso) || 0);
+        if (pagesAdded > 0) await checkAndCelebrateRecord(pagesAdded);
         toast('Livro atualizado!');
       } else {
         const res = await dbAddBook(book);
@@ -2481,11 +2485,11 @@
     if (pagesAdded <= 0) return;
     // Invalida cache para recalcular com os novos dados
     allEntriesCache = null;
-    const snap = useFirestore()
-      ? await (async () => { const s = await window._fbGetDocs(pagesRef()); return s.docs.map(d => d.data()); })()
-      : (loadCache(PAGES_CACHE_KEY) || []);
+    localStorage.removeItem(PAGES_CACHE_KEY);
+    const { entries: snap } = await dbGetPages('total');
     if (!snap.length) return;
     allEntriesCache = snap;
+    computeAvgPagesPerDay(snap);
 
     const today  = todayStr();
     const wkStart = getWeekStart();
